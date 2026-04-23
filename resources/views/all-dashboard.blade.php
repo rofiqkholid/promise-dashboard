@@ -1,0 +1,1243 @@
+@extends('layouts.app')
+
+@section('content')
+<!-- Main Content -->
+<main class="p-2 px-8 bg-gray-100 flex flex-col lg:overflow-hidden lg:h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)]"
+    @mousemove.window="resetIdleTimer()"
+    @keypress.window="resetIdleTimer()"
+    @touchstart.window="resetIdleTimer()"
+    @scroll.window="resetIdleTimer()"
+    @click.window="resetIdleTimer()"
+    @prev-section.window="toggleSection()"
+    @next-section.window="toggleSection()"
+    x-data="{ 
+            activeSection: 'drawing',
+            idleTimeout: null,
+            screensaverInterval: null,
+            isScreensaverPaused: false,
+            
+            init() { 
+                this.resetIdleTimer();
+                this.$watch('isScreensaverPaused', value => {
+                    if (value) {
+                        if (this.screensaverInterval) { clearInterval(this.screensaverInterval); this.screensaverInterval = null; }
+                        if (this.idleTimeout) { clearTimeout(this.idleTimeout); this.idleTimeout = null; }
+                    } else {
+                        this.resetIdleTimer();
+                    }
+                });
+            },
+            
+            resetIdleTimer() {
+                if (this.screensaverInterval) {
+                    clearInterval(this.screensaverInterval);
+                    this.screensaverInterval = null;
+                }
+                if (this.idleTimeout) {
+                    clearTimeout(this.idleTimeout);
+                }
+                if (!this.isScreensaverPaused) {
+                    this.idleTimeout = setTimeout(() => {
+                        this.startScreensaver();
+                    }, 5000); // Restored to 5s per user request
+                }
+            },
+            
+            startScreensaver() {
+                if (this.isScreensaverPaused) return;
+                this.toggleSection();
+                this.screensaverInterval = setInterval(() => {
+                    if (!this.isScreensaverPaused) {
+                        this.toggleSection();
+                    } else {
+                        clearInterval(this.screensaverInterval);
+                        this.screensaverInterval = null;
+                    }
+                }, 5000);
+            },
+            
+            toggleSection() {
+                this.activeSection = this.activeSection === 'drawing' ? 'inventory' : 'drawing';
+            }
+        }">
+    <div class="relative flex-1 w-full min-h-0 flex flex-col"
+        x-data="drawingDashboardData()" x-init="loadFilterOptions().then(() => fetchData())"
+        @open-filter-modal.window="showFilterModal = true">
+        
+        <!-- Filter Modal -->
+        <div x-show="showFilterModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" x-transition.opacity>
+                <div @click.away="showFilterModal = false" class="bg-white shadow-xl flex flex-col overflow-visible" style="width: 70vw; min-height: 50vh;">
+                    <div class="flex items-center justify-between px-10 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            Filter Data
+                        </h3>
+                        <button @click="showFilterModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="px-10 py-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-0.5">Date End</label>
+                                <div class="relative">
+                                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <i class="fa-solid fa-calendar-days text-gray-400 text-sm"></i>
+                                    </div>
+                                    <input type="date" id="filter_date_end" style="height: 2.375rem; border: 1px solid #d1d5db; border-radius: 1px; font-size: 0.875rem; color: #3f3f3f;" class="block w-full focus:ring-0 focus:outline-none py-1.5 pl-9 pr-3">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-0.5">Customer</label>
+                                <div class="relative">
+                                    <select id="filter_customer" class="w-full text-xs"></select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-0.5">Model</label>
+                                <div class="relative">
+                                    <select id="filter_model" class="w-full text-xs"></select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-0.5">Part Group</label>
+                                <div class="relative">
+                                    <select id="filter_part_group" class="w-full text-xs"></select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-0.5">Status</label>
+                                <div class="relative">
+                                    <select id="filter_status" class="w-full text-xs"></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full flex justify-between items-center mt-3 pt-2 border-t border-gray-200">
+                            <div id="filterPillContainer" class="flex-grow pr-6 text-xs flex flex-wrap gap-1"></div>
+                            <div class="flex space-x-2">
+                                <button type="button" @click="isScreensaverPaused = !isScreensaverPaused" class="px-3 py-1.5 text-xs font-medium border border-gray-200 hover:bg-gray-50 flex items-center justify-center min-w-[140px]" :class="isScreensaverPaused ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100' : 'text-gray-700'">
+                                    <i class="fa-solid" :class="isScreensaverPaused ? 'fa-play mr-2' : 'fa-pause mr-2'"></i> 
+                                    <span x-text="isScreensaverPaused ? 'Resume Screensaver' : 'Pause Screensaver'"></span>
+                                </button>
+                                <button type="button" @click="resetFilters()" class="px-3 py-1.5 text-xs font-medium border border-gray-200 hover:bg-gray-50 text-gray-700">Reset</button>
+                                <button type="button" @click="applyFilters()" class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600  hover:bg-blue-700 min-w-[120px]">
+                                    <i class="fa-solid fa-check mr-2"></i> Apply Filter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Drawing Wrapper -->
+        <div class="lg:absolute inset-0 flex flex-col min-h-0 w-full" x-show="activeSection === 'drawing'" x-transition.opacity.duration.700ms>
+
+            <!-- Top Row: Title & 5 KPI Cards -->
+            <div class="flex-none grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
+                
+                <!-- Left Group: Title, Total, Upload, Download (Matches Upload Monitoring) -->
+                <div class="lg:col-span-2 flex flex-col xl:flex-row gap-3 xl:items-center">
+                    <!-- Title Block -->
+                    <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
+                        <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Overview Drawing</h2>
+                        <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">A quick glimpse of your drawing metrics.</p>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-blue-50 text-blue-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-file-lines text-lg mx-1"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Total Files</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight" x-text="documents.toLocaleString('id-ID')">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-green-50 text-green-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Upload</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight" x-text="uploads.toLocaleString('id-ID')">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-yellow-50 text-yellow-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-cloud-arrow-down text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Download</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight" x-text="downloads.toLocaleString('id-ID')">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Group: User Active, Server Storage (Matches Phase Status) -->
+                <div class="lg:col-span-1 flex flex-col xl:flex-row gap-3 xl:items-center">
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-red-50 text-red-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-user-group text-lg"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">User Active</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight" x-text="users.toLocaleString('id-ID')">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-purple-50 text-purple-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-server text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Server Storage</p>
+                            <h3 class="text-sm font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis"><span x-text="diskUsed">0</span> / <span x-text="diskTotal">0</span></h3>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Middle Row: Upload Monitoring & Phase Status -->
+            <div class="flex-[1.5] grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3 min-h-0">
+                <!-- Upload Monitoring -->
+                <div class="lg:col-span-2 border border-gray-200 bg-white p-4 flex flex-col relative min-h-[300px] lg:min-h-0">
+                    <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
+                        <h3 class="font-bold text-gray-700 text-lg">Upload Monitoring</h3>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-gray-400 mr-2" x-text="monitoringAllData.length > 0 ? (monitoringPage + 1) + '/' + Math.ceil(monitoringAllData.length / 7) : ''"></span>
+                            <button @click="prevMonitoringPage()" class="w-7 h-7 flex items-center justify-center border border-gray-200 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" :disabled="monitoringPage === 0">
+                                <i class="fa-solid fa-chevron-left text-xs text-gray-500"></i>
+                            </button>
+                            <button @click="nextMonitoringPage()" class="w-7 h-7 flex items-center justify-center border border-gray-200 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed" :disabled="(monitoringPage + 1) * 7 >= monitoringAllData.length">
+                                <i class="fa-solid fa-chevron-right text-xs text-gray-500"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 w-full min-h-0">
+                        <canvas id="drawingMonitoringChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Phase Status -->
+                <div class="lg:col-span-1 border border-gray-200 bg-white p-4 flex flex-col relative min-h-[300px] lg:min-h-0">
+                    <h3 class="font-bold border-b border-gray-100 pb-2 mb-2 text-gray-700 flex items-center justify-between text-lg flex-none">
+                        <div> Phase Status</div>
+                    </h3>
+                    <div class="relative flex-1 w-full flex items-center justify-center min-h-0 mt-2">
+                        <canvas id="drawingPhaseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Trend, Eco Impact, Activity Log -->
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-3 min-h-0 mb-6 lg:mb-0">
+                <div class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-3 min-h-0">
+                    <!-- Trend Upload & Download -->
+                    <div class="border border-gray-200 bg-white p-4 flex flex-col relative min-h-[280px] lg:min-h-0">
+                    <div class="flex-none flex items-center justify-between font-bold border-b border-gray-100 pb-2 mb-2 text-gray-700 text-lg">
+                        <div class="flex items-center"> Trend Upload & Download</div>
+                        <div x-data="{
+                                open: false
+                            }"
+                            class="relative w-24">
+
+                            <button @click="open = !open" @click.outside="open = false" type="button"
+                                class="flex items-center justify-between w-full px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 focus:outline-none">
+                                <span x-text="selectedYear"></span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                            </button>
+
+                            <div x-show="open" style="display: none;" class="absolute right-0 mt-2 w-full bg-white border border-gray-100 shadow-xl py-1 z-50">
+                                @php $currentY = date('Y'); @endphp
+                                @for($i = $currentY; $i >= $currentY - 5; $i--)
+                                <button @click="open = false; fetchTrendData('{{ $i }}')" type="button"
+                                    class="group flex items-center justify-between w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 transition-colors duration-150">
+                                    <span class="text-gray-700 group-hover:text-blue-600 font-medium"
+                                        :class="selectedYear == '{{ $i }}' ? 'text-blue-600 font-bold' : ''">
+                                        {{ $i }}
+                                    </span>
+                                    <i x-show="selectedYear == '{{ $i }}'" class="fa-solid fa-check text-blue-600 text-xs"></i>
+                                </button>
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 w-full mt-2 min-h-0">
+                        <canvas id="drawingTrendChart"></canvas>
+                    </div>
+                </div>
+
+                    <!-- Eco Impact custom widget -->
+                    <div class="border border-gray-200 bg-white p-3 lg:p-5 flex flex-col relative min-h-[280px] lg:min-h-0 font-sans">
+                    <h3 class="flex-none text-sm lg:text-lg font-bold text-gray-800 mb-2 lg:mb-1 xl:mb-2 flex justify-between items-start border-b border-gray-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-leaf text-emerald-500"></i>
+                            <span>Eco Impact</span>
+                        </div>
+                    </h3>
+
+                    <div class="flex-1 w-full flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-2 xl:gap-4 py-2 lg:py-0">
+                        <div class="relative w-36 h-36 lg:w-32 lg:h-32 xl:w-40 xl:h-40 flex-shrink-0 flex items-center justify-center mx-auto lg:mx-0">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="10" fill="transparent"
+                                    class="text-emerald-50" stroke-dasharray="264" stroke-dashoffset="0"
+                                    stroke-linecap="round" />
+                                <circle id="ecoProgressCircle" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="10" fill="transparent"
+                                    class="text-emerald-500 transition-all duration-1000 ease-out" stroke-dasharray="264" stroke-dashoffset="264"
+                                    stroke-linecap="round" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span class="text-[9px] lg:text-[8px] xl:text-[10px] font-semibold text-gray-400 leading-tight mb-1" x-text="(Math.min(tree, 1) * 100).toFixed(1) + '%'">0%</span>
+                                <span class="text-[8px] lg:text-[7px] xl:text-[9px] text-gray-400 leading-tight">towards 1 Tree</span>
+                                <i class="fa-solid fa-seedling text-2xl lg:text-xl xl:text-2xl text-emerald-600 my-1 filter drop-border "></i>
+                                <div class="flex flex-col leading-tight mt-1">
+                                    <span class="text-xs lg:text-xs xl:text-sm font-bold text-gray-800" x-text="tree.toFixed(5)">0</span>
+                                    <span class="text-[8px] lg:text-[7px] xl:text-[8px] text-gray-400 uppercase tracking-wide">Trees Saved</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-2 lg:gap-2 xl:gap-3 w-full lg:flex-1 justify-center">
+                            <div class="flex items-center p-1.5 lg:p-1 xl:p-1.5 rounded bg-green-50 border border-green-100">
+                                <div class="w-8 h-8 lg:w-7 lg:h-7 xl:w-9 xl:h-9 flex-shrink-0 rounded flex items-center justify-center text-green-600">
+                                    <i class="fa-solid fa-scroll text-sm lg:text-xs xl:text-base"></i>
+                                </div>
+                                <div class="flex items-center gap-1.5 lg:gap-1 xl:gap-2 min-w-0 flex-1 ml-2 lg:ml-1.5 xl:ml-2">
+                                    <span class="text-xs lg:text-[10px] xl:text-sm font-bold text-gray-800" x-text="paper.toLocaleString()">0</span>
+                                    <span class="text-[10px] lg:text-[9px] xl:text-xs text-green-700 font-medium">Paper</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center p-1.5 lg:p-1 xl:p-1.5 rounded bg-yellow-50 border border-yellow-100">
+                                <div class="w-8 h-8 lg:w-7 lg:h-7 xl:w-9 xl:h-9 flex-shrink-0 rounded flex items-center justify-center text-yellow-500">
+                                    <i class="fa-solid fa-coins text-sm lg:text-xs xl:text-base"></i>
+                                </div>
+                                <div class="flex items-center gap-1.5 lg:gap-1 xl:gap-2 min-w-0 flex-1 ml-2 lg:ml-1.5 xl:ml-2">
+                                    <span class="text-xs lg:text-[10px] xl:text-sm font-bold text-gray-800">Rp <span x-text="harga.toLocaleString('id-ID')">0</span></span>
+                                    <span class="text-[10px] lg:text-[9px] xl:text-xs text-yellow-700 font-medium">Cost</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center p-1.5 lg:p-1 xl:p-1.5 rounded bg-cyan-50 border border-cyan-100">
+                                <div class="w-8 h-8 lg:w-7 lg:h-7 xl:w-9 xl:h-9 flex-shrink-0 rounded flex items-center justify-center text-cyan-600">
+                                    <i class="fa-solid fa-wind text-sm lg:text-xs xl:text-base"></i>
+                                </div>
+                                <div class="flex items-center gap-1.5 lg:gap-1 xl:gap-2 min-w-0 flex-1 ml-2 lg:ml-1.5 xl:ml-2">
+                                    <span class="text-xs lg:text-[10px] xl:text-sm font-bold text-gray-800" x-text="co2.toFixed(3) + ' Kg'">0 Kg</span>
+                                    <span class="text-[10px] lg:text-[9px] xl:text-xs text-cyan-700 font-medium">CO2</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <!-- Activity Log -->
+                <div class="lg:col-span-1 border border-gray-200 bg-white p-3 lg:p-4 flex flex-col overflow-hidden min-h-[280px] lg:min-h-0">
+                    <h3 class="flex-none text-sm lg:text-lg font-bold text-gray-800 mb-2 flex justify-between items-start border-b border-gray-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-newspaper text-gray-500"></i>
+                            <span>Activity Log</span>
+                        </div>
+                    </h3>
+                    <div class="flex-1 overflow-y-auto pr-1 lg:pr-2 min-h-0 divide-y divide-gray-100">
+                        <template x-for="act in recentActivity.slice(0, 10)" :key="act.id">
+                            <div class="py-1.5 lg:py-2 px-1 flex space-x-2 lg:space-x-3 hover:bg-gray-50 transition-all duration-300">
+                                <div class="flex-shrink-0 pt-1">
+                                    <i class="fa-solid fa-cloud-arrow-up text-green-500 w-4 lg:w-5 text-center text-xs lg:text-base"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <p class="text-xs lg:text-sm text-gray-800">
+                                            <strong x-text="act.user_name">System</strong> upload new document.
+                                        </p>
+                                    </div>
+                                    <p class="text-[10px] lg:text-xs text-gray-500 mt-0.5" x-text="new Date(act.created_at).toLocaleString('id-ID', {day: 'numeric', month:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit'}).replace(/\./g,':')"></p>
+                                    <p class="mt-0.5 lg:mt-1 text-[10px] lg:text-[12px] text-gray-600 font-mono truncate">
+                                        <span x-text="[act.meta?.customer_code, act.meta?.model_name, act.meta?.part_no, act.meta?.doctype_group, act.meta?.part_group_code].filter(Boolean).join(' - ')"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Inventory Wrapper -->
+        <div class="lg:absolute inset-0 flex flex-col min-h-0 w-full" x-show="activeSection === 'inventory'" x-transition.opacity.duration.700ms style="display: none;">
+            <!-- Top Row: Title & 5 KPI Cards (Dummy) -->
+            <div class="flex-none grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
+                
+                <!-- Left Group: Title, Total, Upload, Download -->
+                <div class="lg:col-span-2 flex flex-col xl:flex-row gap-3 xl:items-center">
+                    <!-- Title Block -->
+                    <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
+                        <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Overview Inventory</h2>
+                        <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">A quick glimpse of your inventory metrics.</p>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-blue-50 text-blue-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-boxes-stacked text-lg mx-1"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Total Items</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-green-50 text-green-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-arrow-right-to-bracket text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Stock In</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-yellow-50 text-yellow-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-arrow-right-from-bracket text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Stock Out</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Group: User Active -->
+                <div class="lg:col-span-1 flex flex-col xl:flex-row gap-3 xl:items-center">
+                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="bg-red-50 text-red-500 p-2 rounded mr-3 flex-shrink-0">
+                            <i class="fa-solid fa-user-group text-lg"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">User Active</p>
+                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                <!-- Chart 11 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Total Items In Stock</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Live</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart11"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 12 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Stock In (Monthly)</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart12"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 13 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Stock Out (Monthly)</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart13"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 14 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Low Stock Alerts</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Items</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart14"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 15 -->
+                <div class="border border-gray-200 p-4 bg-white relative md:col-span-2 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Overall Asset Value</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">USD</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart15"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 16 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Return Rate</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">%</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart16"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 17 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Supplier Deliveries</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Avg/Wk</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart17"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 18 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Damaged/Defective</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart18"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 19 -->
+                <div class="border border-gray-200 p-4 bg-white relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Warehouse Capacity</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">%</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart19"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 20 -->
+                <div class="border border-gray-200 p-4 bg-white relative md:col-span-2 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                        <h3 class="font-bold">Inventory Turnover Ratio</h3>
+                        <span class="text-sm border border-gray-200 px-2 py-1">YTD</span>
+                    </div>
+                    <div class="relative h-48 w-full">
+                        <canvas id="chart20"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End of Grid Wrapper -->
+</main>
+@endsection
+
+@push('scripts')
+<script>
+    window.drawingDashboardData = function() {
+        return {
+            baseUrl: "{{ url('api') }}",
+
+            users: 0,
+            uploads: 0,
+            downloads: 0,
+            documents: 0,
+
+            paper: 0,
+            harga: 0,
+            tree: 0,
+            co2: 0,
+
+            diskTotal: '0 GB',
+            diskUsed: '0 GB',
+
+            recentActivity: [],
+            selectedYear: '2026',
+
+            showFilterModal: false,
+            selectedCustomers: [],
+            selectedModels: [],
+            selectedPartGroup: [],
+            select2Initialized: false,
+            
+            getFilterParams() {
+                const params = new URLSearchParams();
+                const dateEnd = document.getElementById('filter_date_end')?.value;
+                if (dateEnd) params.append('date_end', dateEnd);
+                
+                this.selectedCustomers.forEach(c => params.append('customer[]', c.text));
+                this.selectedModels.forEach(m => params.append('model[]', m.text));
+                this.selectedPartGroup.forEach(p => params.append('part_group[]', p.text));
+                
+                if (this.select2Initialized) {
+                    const statusData = $('#filter_status').select2('data');
+                    const statusVal = statusData && statusData[0] ? statusData[0].text : 'ALL';
+                    if (statusVal && statusVal !== 'ALL') {
+                        params.append('project_status', statusVal);
+                    }
+                }
+                
+                params.append('year', this.selectedYear);
+                return params.toString();
+            },
+            
+            async loadFilterOptions() {
+                // Select2 will be initialized when modal opens
+                this.$watch('showFilterModal', (val) => {
+                    if (val && !this.select2Initialized) {
+                        this.$nextTick(() => this.initSelect2());
+                    }
+                });
+            },
+            
+            initSelect2() {
+                const self = this;
+                
+                // Customer Select2
+                $('#filter_customer').select2({
+                    dropdownParent: $('#filter_customer').parent(),
+                    width: '100%',
+                    placeholder: 'Select Customer...',
+                    allowClear: true,
+                    ajax: {
+                        url: `${this.baseUrl}/customers`,
+                        dataType: 'json',
+                        delay: 250,
+                        data: (params) => ({
+                            q: params.term,
+                            page: params.page || 1
+                        }),
+                        processResults: (data, params) => ({
+                            results: data.results || [],
+                            pagination: { more: data.pagination ? data.pagination.more : false }
+                        })
+                    }
+                }).on('change', function() {
+                    const data = $(this).select2('data')[0];
+                    if (data && data.id) {
+                        if (!self.selectedCustomers.find(x => x.id === data.id)) {
+                            self.selectedCustomers.push({ id: data.id, text: data.text });
+                            self.renderFilterPills();
+                        }
+                        $(this).val(null).trigger('change.select2');
+                    }
+                });
+                
+                // Model Select2
+                $('#filter_model').select2({
+                    dropdownParent: $('#filter_model').parent(),
+                    width: '100%',
+                    placeholder: 'Select Model...',
+                    allowClear: true,
+                    ajax: {
+                        url: `${this.baseUrl}/models`,
+                        dataType: 'json',
+                        delay: 250,
+                        data: (params) => ({
+                            q: params.term,
+                            page: params.page || 1,
+                            customer_ids: self.selectedCustomers.map(item => item.id)
+                        }),
+                        processResults: (data, params) => ({
+                            results: data.results || [],
+                            pagination: { more: data.pagination ? data.pagination.more : false }
+                        })
+                    }
+                }).on('change', function() {
+                    const d = $(this).select2('data')[0];
+                    if (d && d.id) {
+                        if (!self.selectedModels.find(x => x.id === d.id)) {
+                            self.selectedModels.push({ id: d.id, text: d.text });
+                            self.renderFilterPills();
+                        }
+                        $(this).val(null).trigger('change.select2');
+                    }
+                });
+                
+                // Part Group Select2
+                $('#filter_part_group').select2({
+                    dropdownParent: $('#filter_part_group').parent(),
+                    width: '100%',
+                    placeholder: 'Select Part Group...',
+                    allowClear: true,
+                    ajax: {
+                        url: `${this.baseUrl}/part-group`,
+                        dataType: 'json',
+                        delay: 250,
+                        data: (params) => ({
+                            q: params.term,
+                            page: params.page || 1
+                        }),
+                        processResults: (data, params) => ({
+                            results: data.results || [],
+                            pagination: { more: data.pagination ? data.pagination.more : (params.page * 10) < data.total_count }
+                        })
+                    }
+                }).on('change', function() {
+                    const d = $(this).select2('data')[0];
+                    if (d && d.text) {
+                        if (!self.selectedPartGroup.find(x => x.text === d.text)) {
+                            self.selectedPartGroup.push({ id: d.id || d.text, text: d.text });
+                        }
+                        self.renderFilterPills();
+                        $(this).val(null).trigger('change.select2');
+                    }
+                });
+                
+                // Status Select2
+                $('#filter_status').select2({
+                    dropdownParent: $('#filter_status').parent(),
+                    width: '100%',
+                    placeholder: 'Select Status',
+                    ajax: {
+                        url: `${this.baseUrl}/status`,
+                        dataType: 'json',
+                        data: (params) => ({
+                            q: params.term
+                        }),
+                        processResults: (data) => {
+                            let res = data.results || [];
+                            res.unshift({ id: 'ALL', text: 'ALL' });
+                            return { results: res };
+                        }
+                    }
+                });
+                
+                this.select2Initialized = true;
+            },
+            
+            renderFilterPills() {
+                const container = document.getElementById('filterPillContainer');
+                container.innerHTML = '';
+                const self = this;
+                
+                const createPill = (type, item, stateKey) => {
+                    const span = document.createElement('span');
+                    span.className = 'inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-medium mr-1 mb-1';
+                    span.innerHTML = `<span class="font-normal mr-1">${type}:</span><span>${item.text}</span><button type="button" class="ml-1 hover:text-blue-600 focus:outline-none"><i class="fa-solid fa-times fa-xs"></i></button>`;
+                    span.querySelector('button').addEventListener('click', () => {
+                        const arr = self[stateKey];
+                        const idx = arr.findIndex(x => (x.id || x.text) === (item.id || item.text));
+                        if (idx > -1) arr.splice(idx, 1);
+                        self.renderFilterPills();
+                    });
+                    container.appendChild(span);
+                };
+                
+                this.selectedCustomers.forEach(item => createPill('Customer', item, 'selectedCustomers'));
+                this.selectedModels.forEach(item => createPill('Model', item, 'selectedModels'));
+                this.selectedPartGroup.forEach(item => createPill('Part Group', item, 'selectedPartGroup'));
+            },
+            
+            resetFilters() {
+                this.selectedCustomers = [];
+                this.selectedModels = [];
+                this.selectedPartGroup = [];
+                document.getElementById('filter_date_end').value = '';
+                if (this.select2Initialized) {
+                    $('#filter_customer').val(null).trigger('change.select2');
+                    $('#filter_model').val(null).trigger('change.select2');
+                    $('#filter_part_group').val(null).trigger('change.select2');
+                    $('#filter_status').val(null).trigger('change.select2');
+                }
+                this.renderFilterPills();
+                this.applyFilters();
+            },
+            
+            applyFilters() {
+                this.showFilterModal = false;
+                this.fetchData();
+            },
+
+            async fetchData() {
+                try {
+                    const qs = this.getFilterParams();
+
+                    // Start all non-chart fetches
+                    const corePromises = [
+                        fetch(`${this.baseUrl}/active-users-count`).then(r => r.json()).then(d => this.users = d.count),
+                        fetch(`${this.baseUrl}/upload-count`).then(r => r.json()).then(d => this.uploads = d.count),
+                        fetch(`${this.baseUrl}/download-count`).then(r => r.json()).then(d => this.downloads = d.count),
+                        fetch(`${this.baseUrl}/doc-count`).then(r => r.json()).then(d => this.documents = d.count),
+                        fetch(`${this.baseUrl}/get-save-env?${qs}`).then(r => r.json()).then(d => {
+                            this.paper = d.paper || 0;
+                            this.harga = d.harga || 0;
+                            this.tree = d.save_tree || 0;
+                            this.co2 = d.co2_reduced || 0;
+
+                            // Animate eco progress circle
+                            this.$nextTick(() => {
+                                const circle = document.getElementById('ecoProgressCircle');
+                                if (circle) {
+                                    const treeProgress = Math.min(this.tree, 1);
+                                    const circumference = 264;
+                                    const offset = circumference * (1 - treeProgress);
+                                    circle.style.transition = 'stroke-dashoffset 1.5s ease-out';
+                                    requestAnimationFrame(() => {
+                                        circle.setAttribute('stroke-dashoffset', offset);
+                                    });
+                                }
+                            });
+                        }),
+                        fetch(`${this.baseUrl}/log-data-activity?${qs}`).then(r => r.json()).then(d => {
+                            this.recentActivity = d.data || [];
+                        })
+                    ];
+
+                    // Wait for core data
+                    await Promise.all(corePromises);
+
+                    // Initialize charts and wait for them
+                    await this.initDrawingCharts();
+
+                    // All ready! Dispatch event to hide preloader
+                    window.dispatchEvent(new CustomEvent('dashboard-ready'));
+
+                } catch (e) {
+                    console.error("Initialization error:", e);
+                    // Still hide loader on error so user isn't stuck
+                    window.dispatchEvent(new CustomEvent('dashboard-ready'));
+                }
+            },
+
+            monitoringAllData: [],
+            monitoringPage: 0,
+
+            prevMonitoringPage() {
+                if (this.monitoringPage > 0) {
+                    this.monitoringPage--;
+                    this.renderMonitoringPage();
+                }
+            },
+
+            nextMonitoringPage() {
+                if ((this.monitoringPage + 1) * 7 < this.monitoringAllData.length) {
+                    this.monitoringPage++;
+                    this.renderMonitoringPage();
+                }
+            },
+
+            renderMonitoringPage() {
+                const Chart = window.Chart;
+                if (!Chart) return;
+
+                const ctx = document.getElementById('drawingMonitoringChart');
+                if (!ctx) return;
+
+                const pageData = this.monitoringAllData.slice(this.monitoringPage * 7, (this.monitoringPage + 1) * 7);
+                if (pageData.length === 0) {
+                    let existChart = Chart.getChart('drawingMonitoringChart');
+                    if (existChart) {
+                        existChart.data.labels = [];
+                        existChart.data.datasets.forEach(ds => ds.data = []);
+                        existChart.update();
+                    }
+                    return;
+                }
+
+                let labels = [];
+                let planCount = [];
+                let actualCount = [];
+                let percentages = [];
+                pageData.forEach(item => {
+                    labels.push([`${item.customer_name}-${item.model}`, `${item.project_status}-${item.part_group}`]);
+                    planCount.push(item.plan_count);
+                    actualCount.push(item.actual_count);
+                    percentages.push(item.percentage);
+                });
+
+                const maxCount = Math.max(...planCount, ...actualCount, 10);
+                const suggestedMax = Math.ceil(maxCount * 1.3);
+
+                let existChart = Chart.getChart('drawingMonitoringChart');
+                if (existChart) {
+                    existChart.data.labels = labels;
+                    existChart.data.datasets[0].data = percentages;
+                    existChart.data.datasets[1].data = planCount;
+                    existChart.data.datasets[2].data = actualCount;
+                    existChart.options.scales.y.suggestedMax = suggestedMax;
+                    existChart.update();
+                    return;
+                }
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                                label: 'Percentage',
+                                data: percentages,
+                                type: 'line',
+                                borderColor: '#f59e0b',
+                                backgroundColor: '#f59e0b',
+                                borderWidth: 2,
+                                pointRadius: 6,
+                                pointBackgroundColor: '#f59e0b',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                tension: 0.3,
+                                fill: false,
+                                yAxisID: 'y1'
+                            },
+                            {
+                                label: 'Plan Count',
+                                data: planCount,
+                                backgroundColor: '#3b82f6',
+                                yAxisID: 'y',
+                                animation: { delay: 200 }
+                            },
+                            {
+                                label: 'Actual Count',
+                                data: actualCount,
+                                backgroundColor: '#10b981',
+                                yAxisID: 'y',
+                                animation: { delay: 400 }
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 700,
+                            easing: 'easeOutQuad'
+                        },
+                        animations: {
+                            y: {
+                                from: (ctx) => {
+                                    if (ctx.type === 'data' && ctx.chart.chartArea) {
+                                        return ctx.chart.chartArea.bottom;
+                                    }
+                                    return undefined;
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    boxWidth: 8,
+                                    font: { family: 'Outfit', size: 14 }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 0,
+                                suggestedMax: suggestedMax,
+                                title: {
+                                    display: true,
+                                    text: 'Count',
+                                    font: { family: 'Outfit', weight: 'bold', size: 12 }
+                                },
+                                grid: { color: '#f3f4f6' },
+                                ticks: {
+                                    maxTicksLimit: 4,
+                                    font: { family: 'Outfit' }
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                max: 120,
+                                title: {
+                                    display: true,
+                                    text: 'Percentage',
+                                    font: { family: 'Outfit', weight: 'bold', size: 12 }
+                                },
+                                grid: { drawOnChartArea: false },
+                                ticks: {
+                                    maxTicksLimit: 4,
+                                    font: { family: 'Outfit' },
+                                    callback: (v) => v > 100 ? null : v
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    font: { family: 'Outfit', weight: '400', size: 14 },
+                                    autoSkip: false,
+                                    maxRotation: 0,
+                                    minRotation: 0
+                                }
+                            }
+                        }
+                    },
+                    plugins: [{
+                        id: 'customLabels',
+                        afterDatasetsDraw(chart) {
+                            const { ctx, data } = chart;
+                            if (!ctx) return;
+                            ctx.save();
+                            data.datasets.forEach((dataset, datasetIndex) => {
+                                if (!chart.isDatasetVisible(datasetIndex)) return;
+                                const meta = chart.getDatasetMeta(datasetIndex);
+                                meta.data.forEach((point, index) => {
+                                    const value = dataset.data[index];
+                                    if (value === null || value === undefined) return;
+                                    const labelText = datasetIndex === 0 ? Math.round(value) + '%' : value;
+                                    ctx.font = 'bold 14px Outfit';
+                                    ctx.fillStyle = '#4e535cff';
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'bottom';
+                                    if (point.x && point.y) {
+                                        const offset = datasetIndex === 0 ? 10 : 4;
+                                        ctx.fillText(labelText, point.x, point.y - offset);
+                                    }
+                                });
+                            });
+                            ctx.restore();
+                        }
+                    }]
+                });
+            },
+
+            async fetchTrendData(year) {
+                this.selectedYear = year;
+                await this.initTrendChart();
+            },
+
+            async initTrendChart() {
+                const Chart = window.Chart;
+                if (!Chart) return;
+
+                const qs = this.getFilterParams();
+                const cacheBuster = new Date().getTime();
+                try {
+                    const r = await fetch(`${this.baseUrl}/log-data?${qs}&t=${cacheBuster}`);
+                    const d = await r.json();
+                    const ctx = document.getElementById('drawingTrendChart');
+                    if (ctx && d.data) {
+                        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        const uploads = new Array(12).fill(0);
+                        const downloads = new Array(12).fill(0);
+
+                        d.data.forEach(item => {
+                            let idx = item.month - 1;
+                            uploads[idx] = item.upload_count;
+                            downloads[idx] = item.download_count;
+                        });
+
+                        let existTrend = Chart.getChart('drawingTrendChart');
+                        if (existTrend) {
+                            existTrend.data.datasets[0].data = uploads;
+                            existTrend.data.datasets[1].data = downloads;
+                            existTrend.update();
+                            return;
+                        }
+
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                        label: 'Uploads',
+                                        data: uploads,
+                                        borderColor: '#10b981',
+                                        backgroundColor: '#10b981',
+                                        borderWidth: 2,
+                                        tension: 0.4
+                                    },
+                                    {
+                                        label: 'Downloads',
+                                        data: downloads,
+                                        borderColor: '#f59e0b',
+                                        backgroundColor: '#f59e0b',
+                                        borderWidth: 2,
+                                        tension: 0.4,
+                                        animation: {
+                                            delay: 200
+                                        }
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 500,
+                                    easing: 'easeOutQuad'
+                                },
+                                animations: {
+                                    y: {
+                                        from: (ctx) => {
+                                            if (ctx.type === 'data' && ctx.chart.chartArea) {
+                                                return ctx.chart.chartArea.bottom;
+                                            }
+                                            return undefined;
+                                        }
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            padding: 20,
+                                            usePointStyle: true,
+                                            boxWidth: 8,
+                                            font: {
+                                                family: 'Outfit',
+                                                size: 14
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: {
+                                            color: '#f3f4f6'
+                                        },
+                                        ticks: {
+                                            maxTicksLimit: 4,
+                                            font: {
+                                                family: 'Outfit'
+                                            }
+                                        }
+                                    },
+                                    x: {
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            font: {
+                                                family: 'Outfit'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error fetching trend data:", e);
+                }
+            },
+
+            async initDrawingCharts() {
+                const Chart = window.Chart;
+                if (!Chart) return;
+                
+                const qs = this.getFilterParams();
+
+                await Promise.all([
+                    this.initTrendChart(),
+
+                    fetch(`${this.baseUrl}/upload-phase-status?${qs}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        const ctx = document.getElementById('drawingPhaseChart');
+                        if (ctx && d.data) {
+                            let statusCounts = {};
+                            d.data.forEach(item => {
+                                statusCounts[item.project_status] = (statusCounts[item.project_status] || 0) + parseInt(item.total, 10);
+                            });
+                            let labels = Object.keys(statusCounts);
+                            let data = Object.values(statusCounts);
+
+                            let existPhase = Chart.getChart('drawingPhaseChart');
+                            if (existPhase) {
+                                existPhase.data.labels = labels;
+                                existPhase.data.datasets[0].data = data;
+                                existPhase.update();
+                                return;
+                            }
+
+                            new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: labels,
+                                    datasets: [{
+                                        data: data,
+                                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+                                        borderWidth: 1,
+                                        borderColor: '#ffffff',
+                                        animation: {
+                                            duration: 1000,
+                                            easing: 'easeOutQuad'
+                                        }
+                                    }]
+                                },
+                                plugins: [window.ChartDataLabels],
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: {
+                                        animateRotate: true,
+                                        animateScale: true
+                                    },
+                                    plugins: {
+                                        datalabels: {
+                                            color: '#fff',
+                                            formatter: (value, ctx) => {
+                                                let sum = 0;
+                                                let dataArr = ctx.chart.data.datasets[0].data;
+                                                dataArr.map(data => {
+                                                    sum += Number(data);
+                                                });
+                                                let percentageNum = Math.round((value * 100 / sum));
+                                                return percentageNum > 0 ? percentageNum + "%" : null;
+                                            },
+                                            font: {
+                                                family: 'Outfit',
+                                                weight: 'bold'
+                                            }
+                                        },
+                                        legend: {
+                                            position: 'bottom',
+                                            labels: {
+                                                padding: 30,
+                                                boxWidth: 10,
+                                                usePointStyle: true,
+                                                font: {
+                                                    family: 'Outfit',
+                                                    size: 14
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }),
+
+                    fetch(`${this.baseUrl}/disk-space`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.status === 'success') {
+                            this.diskTotal = d.total || '1,000 GB';
+                            this.diskUsed = d.used || '875 GB';
+                        }
+                    }),
+
+                    fetch(`${this.baseUrl}/upload-monitoring-data?${qs}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.data) {
+                            this.monitoringAllData = d.data || [];
+                            this.monitoringPage = 0;
+                            this.renderMonitoringPage();
+                        }
+                    })
+                ]);
+
+                // Extra small delay for layout to settle and initial animations to trigger
+                await new Promise(resolve => setTimeout(resolve, 400));
+            }
+        }
+    }
+</script>
+@endpush
