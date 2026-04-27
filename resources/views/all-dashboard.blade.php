@@ -1,4 +1,7 @@
-<?php $__env->startSection('content'); ?>
+@extends('layouts.app')
+
+@section('content')
+
 <!-- Main Content -->
 <main class="p-2 px-8 bg-gray-100 flex flex-col lg:overflow-hidden lg:h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)]"
     @mousemove.window="resetIdleTimer()"
@@ -364,181 +367,206 @@
         </div>
 
         <!-- Inventory Wrapper -->
-        <div class="lg:absolute inset-0 flex flex-col min-h-0 w-full" x-show="activeSection === 'inventory'" x-transition.opacity.duration.700ms style="display: none;">
-            <!-- Top Row: Title & 5 KPI Cards (Dummy) -->
-            <div class="flex-none grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
-                
-                <!-- Left Group: Title, Total, Upload, Download -->
-                <div class="lg:col-span-2 flex flex-col xl:flex-row gap-3 xl:items-center">
-                    <!-- Title Block -->
-                    <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
-                        <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Overview Inventory</h2>
-                        <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">A quick glimpse of your inventory metrics.</p>
-                    </div>
-                    
-                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
-                        <div class="bg-blue-50 text-blue-500 p-2 rounded mr-3 flex-shrink-0">
-                            <i class="fa-solid fa-boxes-stacked text-lg mx-1"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Total Items</p>
-                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
-                        </div>
-                    </div>
-                    
-                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
-                        <div class="bg-green-50 text-green-500 p-2 rounded mr-3 flex-shrink-0">
-                            <i class="fa-solid fa-arrow-right-to-bracket text-lg mx-0.5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Stock In</p>
-                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
-                        </div>
-                    </div>
-                    
-                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
-                        <div class="bg-yellow-50 text-yellow-500 p-2 rounded mr-3 flex-shrink-0">
-                            <i class="fa-solid fa-arrow-right-from-bracket text-lg mx-0.5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">Stock Out</p>
-                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
-                        </div>
-                    </div>
-                </div>
+        <div class="lg:absolute inset-0 flex flex-col min-h-0 w-full gap-2" x-show="activeSection === 'inventory'" x-transition.opacity.duration.700ms style="display: none;"
+             x-data="inventoryDashboard()" x-init="fetchInventoryData()">
 
-                <!-- Right Group: User Active -->
-                <div class="lg:col-span-1 flex flex-col xl:flex-row gap-3 xl:items-center">
-                    <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
-                        <div class="bg-red-50 text-red-500 p-2 rounded mr-3 flex-shrink-0">
-                            <i class="fa-solid fa-user-group text-lg"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate">User Active</p>
-                            <h3 class="text-xl font-bold text-gray-800 leading-tight">0</h3>
-                        </div>
+            {{-- Header & KPIs --}}
+            <div class="flex flex-wrap items-center justify-between gap-y-2 gap-x-4">
+                <div class="flex-none">
+                    <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1">Inventory Overview</h2>
+                    <p class="text-[11px] xl:text-xs text-gray-500 leading-tight">Stock monitoring and transaction analytics</p>
+                </div>
+                <div class="flex-1 flex flex-col md:flex-row gap-2 items-stretch lg:justify-end min-w-[100%] xl:min-w-[750px]">
+                    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 flex-1">
+                        <template x-for="kpi in kpis" :key="kpi.id">
+                            <div class="bg-white px-2.5 py-2 rounded-xs border border-gray-200 flex items-center gap-2.5 h-[52px]">
+                                <div class="w-9 h-9 rounded-xs flex items-center justify-center text-base shrink-0" :class="kpi.iconBg">
+                                    <i class="fa-solid" :class="kpi.icon"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest leading-none mb-1 whitespace-nowrap" x-text="kpi.label"></p>
+                                    <h3 class="text-sm font-bold text-slate-900 leading-none tracking-tight whitespace-nowrap">
+                                        <span x-text="kpi.value"></span> <span class="text-[9px] text-slate-400 font-medium ml-0.5" x-text="kpi.unit"></span>
+                                    </h3>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="shrink-0 flex items-stretch">
+                        <button @click="showInvFilter = !showInvFilter" title="Toggle Filters" class="group flex items-center justify-center w-full md:w-[52px] h-[52px] md:h-auto bg-white border border-slate-200 rounded-xs transition-all hover:bg-slate-50">
+                            <i class="fa-solid fa-filter text-slate-400 group-hover:text-primary-500 transition-colors text-sm"></i>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                <!-- Chart 11 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Total Items In Stock</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Live</span>
+            {{-- Filter Card --}}
+            <div x-show="showInvFilter" x-collapse class="bg-white rounded-xs border border-slate-200 p-4">
+                <div class="flex flex-col lg:flex-row gap-4 lg:items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 flex-1">
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-medium text-slate-700 uppercase tracking-widest">Period</label>
+                            <input type="month" id="inv_month_picker" x-model="invMonthYear" @change="fetchInventoryData()" class="w-full text-xs font-medium border border-slate-200 bg-white text-slate-900 rounded-xs h-[40px] px-3 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all focus:border-primary-500">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-medium text-slate-700 uppercase tracking-widest">Customer</label>
+                            <select id="invFilterCustomer" class="w-full text-xs"></select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-medium text-slate-700 uppercase tracking-widest">Model</label>
+                            <select id="invFilterModel" class="w-full text-xs"></select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-medium text-slate-700 uppercase tracking-widest">Balance Status</label>
+                            <select id="invFilterBalance" class="w-full text-xs"></select>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-[10px] font-medium text-slate-700 uppercase tracking-widest">Usage Status</label>
+                            <select id="invFilterUsage" class="w-full text-xs"></select>
+                        </div>
                     </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart11"></canvas>
+                    <div class="flex gap-2 pt-2 xl:pt-0">
+                        <button type="button" @click="resetInvFilters()" class="h-[40px] px-6 bg-slate-100 hover:bg-slate-200 rounded-xs text-[10px] font-bold text-slate-600 uppercase tracking-widest transition-all">Reset Filters</button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Charts & Tables 3-Column Layout --}}
+            <div class="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
+                {{-- Column 1: Stock Status + Balance Warnings --}}
+                <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+                    <div class="chart-card bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 class="text-sm lg:text-base font-semibold text-gray-800 flex items-center min-w-0 pr-2">
+
+                                <span class="truncate">Stock Status</span>
+                                <span class="ml-2 px-1.5 py-0.5 rounded-xs bg-slate-100 text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
+                            </h3>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button id="invStockChartPrev" @click="paginateInvChart('invStockChart', -1)" disabled class="w-6 h-6 flex items-center justify-center rounded-xs bg-gray-100 hover:bg-gray-200 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+                                <button id="invStockChartNext" @click="paginateInvChart('invStockChart', 1)" disabled class="w-6 h-6 flex items-center justify-center rounded-xs bg-gray-100 hover:bg-gray-200 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                            </div>
+                        </div>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="invStockChart"></canvas></div>
+                    </div>
+                    <div class="table-container bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[320px] lg:h-auto lg:flex-[45] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 class="text-sm lg:text-base font-semibold text-gray-800 flex items-center">
+                                Balance Warnings
+                            </h3>
+                        </div>
+                        <div class="overflow-y-auto flex-1 custom-scrollbar border border-gray-100 rounded-xs">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
+                                    <tr>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Part No</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Min</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Actual</th>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invBalanceTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Chart 12 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Stock In (Monthly)</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
+                {{-- Column 2: Usage by Model/Maker + Material Usage Table --}}
+                <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+                    <div class="chart-card bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 id="invUsageChartTitle" class="text-sm lg:text-base font-semibold text-gray-800 flex items-center min-w-0 pr-2">
+
+                                <span class="truncate">Usage by Models</span>
+                                <span class="ml-2 px-1.5 py-0.5 rounded-xs bg-slate-100 text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
+                            </h3>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <div class="flex bg-gray-100 p-0.5 rounded-xs">
+                                    <button type="button" @click="switchInvUsageChart('model')" id="btnInvUsageModel" class="px-2 py-1 rounded-xs text-[9px] font-bold uppercase transition-all bg-white text-primary-600 shadow-sm">Model</button>
+                                    <button type="button" @click="switchInvUsageChart('maker')" id="btnInvUsageMaker" class="px-2 py-1 rounded-xs text-[9px] font-bold uppercase transition-all text-gray-500 hover:text-gray-700">Maker</button>
+                                </div>
+                                <div class="flex items-center gap-1 border-l border-gray-200 pl-2">
+                                    <button id="invUsageChartPrev" @click="paginateInvActiveUsage(-1)" disabled class="w-6 h-6 flex items-center justify-center rounded-xs bg-gray-100 hover:bg-gray-200 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+                                    <button id="invUsageChartNext" @click="paginateInvActiveUsage(1)" disabled class="w-6 h-6 flex items-center justify-center rounded-xs bg-gray-100 hover:bg-gray-200 text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative w-full flex-1 min-h-0">
+                            <div id="invContainerUsageModel" class="h-full"><canvas id="invUsageModelChart"></canvas></div>
+                            <div id="invContainerUsageMaker" class="h-full hidden"><canvas id="invMakerChart"></canvas></div>
+                        </div>
                     </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart12"></canvas>
+                    <div class="table-container bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[320px] lg:h-auto lg:flex-[45] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 class="text-sm lg:text-base font-semibold text-gray-800 flex items-center">
+                                Material Usage Detail
+                            </h3>
+                        </div>
+                        <div class="overflow-y-auto flex-1 custom-scrollbar border border-gray-100 rounded-xs">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
+                                    <tr>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Part No</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Supplier</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Actual</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Gap</th>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invUsageTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Chart 13 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Stock Out (Monthly)</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart13"></canvas>
-                    </div>
-                </div>
+                {{-- Column 3: Transaction Trend + Recent Activity --}}
+                <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+                    <div class="chart-card bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 class="text-sm lg:text-base font-semibold text-gray-800 flex items-center min-w-0">
 
-                <!-- Chart 14 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Low Stock Alerts</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Items</span>
+                                <span class="truncate">Transaction Trend</span>
+                                <span class="ml-2 px-1.5 py-0.5 rounded-xs bg-slate-100 text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
+                            </h3>
+                        </div>
+                        <div class="relative w-full flex-1 min-h-0"><canvas id="invTrendlineChart"></canvas></div>
                     </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart14"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 15 -->
-                <div class="border border-gray-200 p-4 bg-white relative md:col-span-2 lg:col-span-2">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Overall Asset Value</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">USD</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart15"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 16 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Return Rate</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">%</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart16"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 17 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Supplier Deliveries</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Avg/Wk</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart17"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 18 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Damaged/Defective</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">Qty</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart18"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 19 -->
-                <div class="border border-gray-200 p-4 bg-white relative">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Warehouse Capacity</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">%</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart19"></canvas>
-                    </div>
-                </div>
-
-                <!-- Chart 20 -->
-                <div class="border border-gray-200 p-4 bg-white relative md:col-span-2 lg:col-span-2">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                        <h3 class="font-bold">Inventory Turnover Ratio</h3>
-                        <span class="text-sm border border-gray-200 px-2 py-1">YTD</span>
-                    </div>
-                    <div class="relative h-48 w-full">
-                        <canvas id="chart20"></canvas>
+                    <div class="table-container bg-white p-2 lg:p-2.5 rounded-xs border border-gray-200 flex flex-col relative h-[320px] lg:h-auto lg:flex-[45] min-h-0">
+                        <div class="flex-none flex justify-between items-center mb-1">
+                            <h3 class="text-sm lg:text-base font-semibold text-gray-800 flex items-center">
+                                Recent Activity
+                            </h3>
+                        </div>
+                        <div class="overflow-y-auto flex-1 custom-scrollbar border border-gray-100 rounded-xs">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-md">
+                                    <tr>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest">Part No</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center">Type</th>
+                                        <th class="py-2 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center">Date</th>
+                                        <th class="py-2 px-3 text-[9px] font-bold text-slate-500 uppercase tracking-widest text-right">Qty</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invHistoryTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div> <!-- End of Grid Wrapper -->
 </main>
-<?php $__env->stopSection(); ?>
+@endsection
 
-<?php $__env->startPush('scripts'); ?>
+
+@push('scripts')
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="{{ asset('js/inventory-dashboard.js') }}"></script>
+
 <script>
+
     window.drawingDashboardData = function() {
         return {
             baseUrl: "{{url('api')}}",
@@ -1242,17 +1270,17 @@
 {{-- Drilldown Modal --}}
 <div id="drilldownModal" class="fixed inset-0 z-50 hidden" aria-modal="true">
     <div class="absolute inset-0 bg-black/40" onclick="closeDrilldownModal()"></div>
-    <div class="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-white dark:bg-gray-900 shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="drilldownPanel">
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="drilldownPanel">
         {{-- Header --}}
-        <div class="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div class="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
             <div>
                 <div class="flex items-center gap-2 mb-0.5">
                     <p class="text-[10px] font-bold text-primary-500 uppercase tracking-widest">Detail Explorer</p>
-                    <span id="drilldownCountBadge" class="px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-[9px] font-bold">0</span>
+                    <span id="drilldownCountBadge" class="px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-600 text-[9px] font-bold">0</span>
                 </div>
-                <h2 id="drilldownTitle" class="text-base font-bold text-gray-800 dark:text-gray-100 truncate max-w-[300px]">Loading...</h2>
+                <h2 id="drilldownTitle" class="text-base font-bold text-gray-800 truncate max-w-[300px]">Loading...</h2>
             </div>
-            <button onclick="closeDrilldownModal()" class="w-8 h-8 flex items-center justify-center rounded-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors">
+            <button onclick="closeDrilldownModal()" class="w-8 h-8 flex items-center justify-center rounded-xs bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors">
                 <i class="fa-solid fa-xmark text-sm"></i>
             </button>
         </div>
@@ -1266,19 +1294,19 @@
         {{-- Content --}}
         <div id="drilldownContent" class="flex-1 flex-col hidden min-h-0">
             {{-- Quick Filters (Segmented Control Style) --}}
-            <div id="drilldownLegendContainer" class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+            <div id="drilldownLegendContainer" class="px-5 py-3 border-b border-gray-100 bg-gray-50/30">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Filter by Status</p>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Filter by Status</p>
                 </div>
-                <div id="drilldownLegendButtons" class="inline-flex p-1 bg-gray-100 dark:bg-gray-800/80 rounded-lg gap-1">
+                <div id="drilldownLegendButtons" class="inline-flex p-1 bg-gray-100 rounded-lg gap-1">
                     {{-- Buttons injected by JS --}}
                 </div>
             </div>
 
-            <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-20 flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div class="px-5 py-3 border-b border-gray-100 bg-white sticky top-0 z-20 flex flex-col md:flex-row gap-3 items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-[9px] font-semibold text-slate-400 uppercase whitespace-nowrap tracking-wider">Show</span>
-                    <select id="drilldownPageSize" onchange="resetDrilldownAndFetch()" class="h-8 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xs text-[11px] px-2 focus:ring-1 focus:ring-primary-500 outline-none cursor-pointer">
+                    <select id="drilldownPageSize" onchange="resetDrilldownAndFetch()" class="h-8 bg-gray-50 border border-gray-200 rounded-xs text-[11px] px-2 focus:ring-1 focus:ring-primary-500 outline-none cursor-pointer">
                         <option value="10">10</option>
                         <option value="25">25</option>
                         <option value="50">50</option>
@@ -1287,7 +1315,7 @@
                     <span class="text-[9px] font-semibold text-slate-400 uppercase whitespace-nowrap tracking-wider">entries</span>
                 </div>
                 <div class="relative w-full md:w-60">
-                    <input type="text" id="drilldownSearch" placeholder="Search Part No..." class="w-full h-8 pl-9 pr-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xs text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all placeholder:text-gray-400">
+                    <input type="text" id="drilldownSearch" placeholder="Search Part No..." class="w-full h-8 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-xs text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all placeholder:text-gray-400">
                     <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                         <i class="fa-solid fa-magnifying-glass text-[9px]"></i>
                     </div>
@@ -1295,7 +1323,7 @@
             </div>
             <div class="flex-1 relative min-h-0">
                 {{-- Partial Table Loader --}}
-                <div id="drilldownTableLoader" class="hidden absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-30 flex items-center justify-center backdrop-blur-[1px] transition-all">
+                <div id="drilldownTableLoader" class="hidden absolute inset-0 bg-white/60 z-30 flex items-center justify-center backdrop-blur-[1px] transition-all">
                     <div class="flex flex-col items-center">
                         <i class="fa-solid fa-circle-notch fa-spin text-xl text-primary-500 mb-2"></i>
                         <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Updating...</span>
@@ -1304,32 +1332,33 @@
 
                 <div class="h-full overflow-y-auto custom-scrollbar">
                     <table class="w-full text-left text-[11px]">
-                        <thead id="drilldownHead" class="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                        <thead id="drilldownHead" class="bg-gray-50 sticky top-0 z-10">
                         </thead>
-                        <tbody id="drilldownBody" class="divide-y divide-slate-100 dark:divide-gray-700">
+                        <tbody id="drilldownBody" class="divide-y divide-slate-100">
                         </tbody>
                     </table>
                 </div>
             </div>
             {{-- Pagination Footer --}}
-            <div class="flex-none px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-                <div class="text-[10px] text-slate-500 dark:text-slate-400">
+            <div class="flex-none px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+                <div class="text-[10px] text-slate-500">
                     Showing <span id="ddPageStart">0</span>-<span id="ddPageEnd">0</span> of <span id="ddTotal">0</span>
                 </div>
                 <div class="flex items-center gap-1">
-                    <button onclick="changeDrilldownPage(-1)" id="ddPrev" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <button onclick="changeDrilldownPage(-1)" id="ddPrev" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
                         <i class="fa-solid fa-chevron-left text-[10px]"></i>
                     </button>
-                    <div class="px-2 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                    <div class="px-2 text-[10px] font-bold text-slate-600">
                         Page <span id="ddCurrentPage">1</span>
                     </div>
-                    <button onclick="changeDrilldownPage(1)" id="ddNext" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                    <button onclick="changeDrilldownPage(1)" id="ddNext" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
                     </button>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -1365,6 +1394,23 @@
         ]
     };
 
+    const STATUS_BADGE = {
+        'Critical':   'bg-rose-100 text-rose-700',
+        'Warning':    'bg-amber-100 text-amber-700',
+        'Over':       'bg-blue-100 text-blue-700',
+        'Safe':       'bg-emerald-100 text-emerald-700',
+        'Loss':       'bg-rose-100 text-rose-700',
+        'Near Loss':  'bg-amber-100 text-amber-700',
+        'On Budget':  'bg-emerald-100 text-emerald-700',
+        'OUT-EVENT':  'bg-amber-100 text-amber-700',
+        'OUT-PP':     'bg-indigo-100 text-indigo-700',
+        'OUT-TRIAL':  'bg-rose-100 text-rose-700',
+        'IN':         'bg-emerald-100 text-emerald-700',
+    };
+
+    let drilldownPage = 1;
+    let drilldownCurrentType = '';
+    let drilldownCurrentLabel = '';
     let drilldownCurrentStatus = '';
     let searchDebounceTimer;
 
@@ -1391,7 +1437,7 @@
     };
 
     function fetchDrilldownData(isInitial = false) {
-        const my = document.getElementById('month_picker')?.value || currentMonthYear;
+        const my = document.getElementById('inv_month_picker')?.value || new Date().toISOString().slice(0, 7);
         const loader = document.getElementById('drilldownLoader');
         const tableLoader = document.getElementById('drilldownTableLoader');
         const content = document.getElementById('drilldownContent');
@@ -1430,12 +1476,12 @@
                 tbody.innerHTML = `<tr><td colspan="${cols.length}" class="py-10 text-center text-slate-400 italic text-[11px]">No data found.</td></tr>`;
             } else {
                 tbody.innerHTML = res.data.map(row => {
-                    return '<tr class="hover:bg-slate-50 dark:hover:bg-gray-800/60 transition-colors border-b border-gray-50 dark:border-gray-800">' + cols.map(c => {
+                    return '<tr class="hover:bg-slate-50 transition-colors border-b border-gray-50">' + cols.map(c => {
                         const val = row[c.key] ?? '-';
                         const badgeCls = (c.key === 'status' || c.key === 'category') ? STATUS_BADGE[val] : null;
                         const cell = badgeCls
                             ? `<span class="inline-block px-1.5 py-0.5 rounded-xs text-[9px] font-bold uppercase ${badgeCls}">${val}</span>`
-                            : `<span class="${c.key === 'part_no' ? 'font-medium text-slate-700 dark:text-gray-200' : 'text-slate-500 dark:text-slate-400'}">${val}</span>`;
+                            : `<span class="${c.key === 'part_no' ? 'font-medium text-slate-700' : 'text-slate-500'}">${val}</span>`;
                         return `<td class="${c.cls}">${cell}</td>`;
                     }).join('') + '</tr>';
                 }).join('');
@@ -1506,18 +1552,18 @@
         const btn = document.createElement('button');
         btn.className = `legend-btn px-4 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all duration-200 ${
             isActive 
-            ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' 
-            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            ? 'bg-white text-primary-600 shadow-sm' 
+            : 'text-slate-500 hover:text-slate-700'
         }`;
         btn.textContent = label;
         return btn;
     }
 
     function updateLegendActive(activeBtn) {
-        $(activeBtn).siblings().removeClass('bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm')
-            .addClass('text-slate-500 dark:text-slate-400');
-        $(activeBtn).removeClass('text-slate-500 dark:text-slate-400')
-            .addClass('bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm');
+        $(activeBtn).siblings().removeClass('bg-white text-primary-600 shadow-sm')
+            .addClass('text-slate-500');
+        $(activeBtn).removeClass('text-slate-500')
+            .addClass('bg-white text-primary-600 shadow-sm');
     }
 
     $('#drilldownSearch').on('input', function() {
@@ -1536,45 +1582,7 @@
     // Close on Escape key
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrilldownModal(); });
 </script>
-<style>
-    .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-    }
-    .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    /* Drilldown Modal Overrides (Anti-Pulling from app.css) */
-    #drilldownModal select {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        padding-right: 1.75rem !important;
-        background-position: right 0.4rem center !important;
-        background-size: 1rem 1rem !important;
-        height: 32px !important;
-        line-height: 32px !important;
-    }
-    #drilldownModal input#drilldownSearch {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        height: 32px !important;
-        line-height: 32px !important;
-        padding-left: 2.25rem !important;
-    }
-    #drilldownModal .legend-btn {
-        padding: 0.4rem 1rem !important;
-        border: none !important;
-        height: auto !important;
-        line-height: 1 !important;
-        width: auto !important;
-        box-shadow: none !important;
-    }
-    #drilldownModal .legend-btn.bg-white {
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
-    }
-</style>
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
 @endpush
-</script>
-<?php $__env->stopPush(); ?>
-<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Dev\eng\promise-dashboard\resources\views/all-dashboard.blade.php ENDPATH**/ ?>
+

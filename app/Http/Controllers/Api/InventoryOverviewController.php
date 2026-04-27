@@ -449,7 +449,7 @@ class InventoryOverviewController extends Controller
         $page       = (int)$request->input('page', 1);
         $offset     = ($page - 1) * $pageSize;
 
-        $outCategories = \App\Models\InventoryModel\Material\TransactionCategory::where('effect', -1)->pluck('code')->toArray();
+        $outCategories = DB::table('inv_m_transaction_category')->where('effect', -1)->pluck('code')->toArray();
         if (empty($outCategories)) {
             $outCategories = ['OUT-EVENT', 'OUT-PP', 'OUT-TRIAL', 'OUT-NG', 'OUT-SCRAP', 'OUT-ADJ', 'OUT-OTHER'];
         }
@@ -532,6 +532,53 @@ class InventoryOverviewController extends Controller
                 ];
             }
 
+        } elseif ($chartType === 'trendline') {
+            $monthName = $label;
+            $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            $monthIdx = array_search($monthName, $monthNames);
+            $monthNum = ($monthIdx !== false) ? $monthIdx + 1 : 1;
+            $year = substr($monthYear, 0, 4) ?: date('Y');
+
+            $title = "Transaction Detail — {$monthName} {$year} ({$statusFilter})";
+
+            $query = (clone $baseTrans)
+                ->whereYear('t.transaction_date', $year)
+                ->whereMonth('t.transaction_date', $monthNum);
+
+            if ($statusFilter) {
+                $catMap = ['Event' => 'OUT-EVENT', 'PP' => 'OUT-PP', 'Trial' => 'OUT-TRIAL', 'In' => 'IN'];
+                $dbStatus = $catMap[$statusFilter] ?? $statusFilter;
+                $query->where('tc.code', $dbStatus);
+            }
+
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('prod.part_no', 'like', "%{$search}%");
+                });
+            }
+
+            $total = (clone $query)->distinct()->count(DB::raw("CONCAT(prod.part_no, ISNULL(rev.code,''), tc.code, CAST(t.transaction_date AS NVARCHAR))"));
+
+            $items = $query->select(
+                    'prod.part_no', 'rev.code as revision',
+                    'tc.code as category',
+                    DB::raw('SUM(t.qty * ISNULL(p.pcs_per_unit, 1)) as qty_pcs'),
+                    't.transaction_date'
+                )
+                ->groupBy('prod.part_no', 'rev.code', 'tc.code', 't.transaction_date')
+                ->orderBy('t.transaction_date', 'desc')
+                ->offset($offset)->limit($pageSize)
+                ->get();
+
+            foreach ($items as $row) {
+                $result[] = [
+                    'part_no'   => $row->part_no . ($row->revision ? ' - ' . $row->revision : ''),
+                    'category'  => $row->category,
+                    'qty_pcs'   => number_format($row->qty_pcs),
+                    'date'      => $row->transaction_date,
+                ];
+            }
+
         } elseif ($chartType === 'usage_model') {
             $parts = explode('|', $label);
             $modelName = $parts[0] ?? '';
@@ -576,12 +623,92 @@ class InventoryOverviewController extends Controller
                 ];
             }
 
+        } elseif ($chartType === 'maker') {
+            $title = "Maker Detail — {$label}";
+
+            $query = (clone $baseTrans)
+                ->where('t.transaction_date', 'like', "{$monthYear}%")
+                ->where('tc.code', 'OUT-TRIAL')
+                ->where('s.code', $label);
+
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('prod.part_no', 'like', "%{$search}%")
+                      ->orWhere('m.name', 'like', "%{$search}%");
+                });
+            }
+
+            $items = $query->leftJoin('inv_m_rank as r', 'r.id', '=', 'p.rank_id')
+                ->select(
+                    'prod.part_no', 'rev.code as revision',
+                    'm.name as model_name', 'c.code as customer_code',
+                    's.code as maker',
+                    'r.code as rank_code', 'r.process_type', 'r.limit_value',
+                    'p.unit_per_car', 'p.pcs_per_unit', 'p.gross_coil',
+                    'u.name as unit_name',
+                    DB::raw('SUM(t.qty) as usage_qty')
+                )
+                ->groupBy(
+                    'prod.part_no', 'rev.code', 'm.name', 'c.code',
+                    's.code', 'r.code', 'r.process_type', 'r.limit_value',
+                    'p.unit_per_car', 'p.pcs_per_unit', 'p.gross_coil', 'u.name'
+                )
+                ->get();
+
+            $processed = [];
+            foreach ($items as $row) {
+                $limit    = $this->calculateAdjustedRank($row->process_type, $row->limit_value, $row->unit_per_car, $row->pcs_per_unit);
+                $usagePcs = $this->calculatePcs($row->usage_qty, 0, $row->pcs_per_unit, $row->unit_name, 0, 0, 0, 1, $row->gross_coil);
+                $gap      = $limit - $usagePcs;
+                $status   = ($gap < 0) ? 'Loss' : (($gap < 50) ? 'Near Loss' : 'On Budget');
+
+                if ($statusFilter && $status !== $statusFilter) continue;
+
+                $processed[] = [
+                    'part_no'   => $row->part_no . ($row->revision ? ' - ' . $row->revision : ''),
+                    'model'     => $row->model_name ?? '-',
+                    'rank'      => ($row->rank_code ?? '-') . ' ' . number_format($limit),
+                    'usage'     => number_format($usagePcs),
+                    'gap'       => number_format($gap),
+                    'status'    => $status,
+                ];
+            }
+            $total = count($processed);
+            $result = array_slice($processed, $offset, $pageSize);
         }
 
         return response()->json([
             'title'   => $title,
-            'total'   => $total,
-            'results' => $result
+            'chart'   => $chartType,
+            'data'    => $result,
+            'total'   => $total
         ]);
+    }
+
+    public function getModels(Request $request)
+    {
+        $term = $request->term;
+        $customerIds = (array) $request->input('customer_id');
+        $query = DB::table('models')->select(DB::raw('MIN(id) as id'), 'name as text')->groupBy('name');
+        if (!empty($customerIds)) $query->whereIn('customer_id', $customerIds);
+        if ($term) $query->where('name', 'like', '%' . $term . '%');
+        $data = $query->orderBy('name')->simplePaginate(20);
+        return response()->json(['results' => $data->items(), 'pagination' => ['more' => $data->hasMorePages()]]);
+    }
+
+    public function getCustomers(Request $request)
+    {
+        $term = $request->term;
+        $query = DB::table('customers')->select('id', 'code as text');
+        if ($term) $query->where(fn($q) => $q->where('code', 'like', '%' . $term . '%')->orWhere('name', 'like', '%' . $term . '%'));
+        $data = $query->orderBy('code')->simplePaginate(20);
+        return response()->json(['results' => $data->items(), 'pagination' => ['more' => $data->hasMorePages()]]);
+    }
+
+    public function getStatuses(Request $request, $type)
+    {
+        $statuses = ($type === 'balance') ? ['Critical', 'Warning', 'Over', 'Safe'] : ['Loss', 'Near Loss', 'On Budget'];
+        $formatted = array_map(fn($item) => ['id' => $item, 'text' => $item], $statuses);
+        return response()->json(['results' => $formatted]);
     }
 }
