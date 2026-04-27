@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\InventoryOverviewController;
+
 
 Route::get('/check-session-status', function () {
     return response()->json(['active' => Auth::check()]);
@@ -42,5 +44,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/models', [\App\Http\Controllers\Api\DashboardController::class, 'getModels']);
         Route::get('/part-group', [\App\Http\Controllers\Api\DashboardController::class, 'getPartGroup']);
         Route::get('/status', [\App\Http\Controllers\Api\DashboardController::class, 'getStatus']);
+
+        // Inventory Overview
+        Route::get('/inventory-overview/data', [\App\Http\Controllers\Api\InventoryOverviewController::class, 'data']);
+        Route::get('/inventory-overview/drilldown', [\App\Http\Controllers\Api\InventoryOverviewController::class, 'drilldown']);
     });
 });

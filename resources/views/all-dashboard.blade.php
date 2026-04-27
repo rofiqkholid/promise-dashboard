@@ -1,6 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <!-- Main Content -->
 <main class="p-2 px-8 bg-gray-100 flex flex-col lg:overflow-hidden lg:h-[calc(100vh-4rem)] min-h-[calc(100vh-4rem)]"
     @mousemove.window="resetIdleTimer()"
@@ -249,15 +247,16 @@
                             </button>
 
                             <div x-show="open" style="display: none;" class="absolute right-0 mt-2 w-full bg-white border border-gray-100 shadow-xl py-1 z-50">
-                                @php $currentY = date('Y'); @endphp
+                                <?php $currentY = date('Y'); ?>
                                 @for($i = $currentY; $i >= $currentY - 5; $i--)
-                                <button @click="open = false; fetchTrendData('{{ $i }}')" type="button"
+                                <button @click="open = false; fetchTrendData('{{$i}}')" type="button"
                                     class="group flex items-center justify-between w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 transition-colors duration-150">
                                     <span class="text-gray-700 group-hover:text-blue-600 font-medium"
-                                        :class="selectedYear == '{{ $i }}' ? 'text-blue-600 font-bold' : ''">
-                                        {{ $i }}
+                                        :class="selectedYear == '{{$i}}' ? 'text-blue-600 font-bold' : ''">
+                                        {{$i}}
+
                                     </span>
-                                    <i x-show="selectedYear == '{{ $i }}'" class="fa-solid fa-check text-blue-600 text-xs"></i>
+                                    <i x-show="selectedYear == '{{$i}}'" class="fa-solid fa-check text-blue-600 text-xs"></i>
                                 </button>
                                 @endfor
                             </div>
@@ -536,13 +535,13 @@
         </div>
     </div> <!-- End of Grid Wrapper -->
 </main>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
     window.drawingDashboardData = function() {
         return {
-            baseUrl: "{{ url('api') }}",
+            baseUrl: "{{url('api')}}",
 
             users: 0,
             uploads: 0,
@@ -1240,4 +1239,342 @@
         }
     }
 </script>
+{{-- Drilldown Modal --}}
+<div id="drilldownModal" class="fixed inset-0 z-50 hidden" aria-modal="true">
+    <div class="absolute inset-0 bg-black/40" onclick="closeDrilldownModal()"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-white dark:bg-gray-900 shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="drilldownPanel">
+        {{-- Header --}}
+        <div class="flex-none flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div>
+                <div class="flex items-center gap-2 mb-0.5">
+                    <p class="text-[10px] font-bold text-primary-500 uppercase tracking-widest">Detail Explorer</p>
+                    <span id="drilldownCountBadge" class="px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 text-[9px] font-bold">0</span>
+                </div>
+                <h2 id="drilldownTitle" class="text-base font-bold text-gray-800 dark:text-gray-100 truncate max-w-[300px]">Loading...</h2>
+            </div>
+            <button onclick="closeDrilldownModal()" class="w-8 h-8 flex items-center justify-center rounded-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition-colors">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        {{-- Loader --}}
+        <div id="drilldownLoader" class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-primary-400 mb-3"></i>
+                <p class="text-[11px] text-slate-400">Fetching data...</p>
+            </div>
+        </div>
+        {{-- Content --}}
+        <div id="drilldownContent" class="flex-1 flex-col hidden min-h-0">
+            {{-- Quick Filters (Segmented Control Style) --}}
+            <div id="drilldownLegendContainer" class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Filter by Status</p>
+                </div>
+                <div id="drilldownLegendButtons" class="inline-flex p-1 bg-gray-100 dark:bg-gray-800/80 rounded-lg gap-1">
+                    {{-- Buttons injected by JS --}}
+                </div>
+            </div>
+
+            <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 sticky top-0 z-20 flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px] font-semibold text-slate-400 uppercase whitespace-nowrap tracking-wider">Show</span>
+                    <select id="drilldownPageSize" onchange="resetDrilldownAndFetch()" class="h-8 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xs text-[11px] px-2 focus:ring-1 focus:ring-primary-500 outline-none cursor-pointer">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span class="text-[9px] font-semibold text-slate-400 uppercase whitespace-nowrap tracking-wider">entries</span>
+                </div>
+                <div class="relative w-full md:w-60">
+                    <input type="text" id="drilldownSearch" placeholder="Search Part No..." class="w-full h-8 pl-9 pr-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xs text-[11px] focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all placeholder:text-gray-400">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-[9px]"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 relative min-h-0">
+                {{-- Partial Table Loader --}}
+                <div id="drilldownTableLoader" class="hidden absolute inset-0 bg-white/60 dark:bg-gray-900/60 z-30 flex items-center justify-center backdrop-blur-[1px] transition-all">
+                    <div class="flex flex-col items-center">
+                        <i class="fa-solid fa-circle-notch fa-spin text-xl text-primary-500 mb-2"></i>
+                        <span class="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Updating...</span>
+                    </div>
+                </div>
+
+                <div class="h-full overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-left text-[11px]">
+                        <thead id="drilldownHead" class="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
+                        </thead>
+                        <tbody id="drilldownBody" class="divide-y divide-slate-100 dark:divide-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {{-- Pagination Footer --}}
+            <div class="flex-none px-5 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+                <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                    Showing <span id="ddPageStart">0</span>-<span id="ddPageEnd">0</span> of <span id="ddTotal">0</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="changeDrilldownPage(-1)" id="ddPrev" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    </button>
+                    <div class="px-2 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                        Page <span id="ddCurrentPage">1</span>
+                    </div>
+                    <button onclick="changeDrilldownPage(1)" id="ddNext" class="w-7 h-7 flex items-center justify-center rounded-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    const drilldownUrl = '/api/inventory-overview/drilldown';
+    const DRILLDOWN_COLS = {
+        stock: [
+            { key: 'part_no',   label: 'Part No',      cls: 'text-left py-2 px-3' },
+            { key: 'stock',     label: 'Stock',         cls: 'text-right py-2 px-2' },
+            { key: 'min_stock', label: 'Min',           cls: 'text-right py-2 px-2' },
+            { key: 'unit',      label: 'Unit',          cls: 'text-center py-2 px-2' },
+            { key: 'status',    label: 'Status',        cls: 'text-center py-2 px-3' },
+        ],
+        usage_model: [
+            { key: 'part_no',   label: 'Part No',       cls: 'text-left py-2 px-3' },
+            { key: 'category',  label: 'Category',      cls: 'text-center py-2 px-2' },
+            { key: 'qty_pcs',   label: 'Qty (pcs)',     cls: 'text-right py-2 px-2' },
+            { key: 'date',      label: 'Date',          cls: 'text-center py-2 px-3' },
+        ],
+        maker: [
+            { key: 'part_no', label: 'Part Number', cls: 'py-2 px-3' },
+            { key: 'model', label: 'Model', cls: 'py-2 px-2' },
+            { key: 'rank', label: 'Rank', cls: 'py-2 px-2 text-center' },
+            { key: 'usage', label: 'Usage (PCS)', cls: 'py-2 px-2 text-right' },
+            { key: 'gap', label: 'Gap', cls: 'py-2 px-2 text-right' },
+            { key: 'status', label: 'Status', cls: 'py-2 px-3 text-right' }
+        ],
+        trendline: [
+            { key: 'part_no', label: 'Part Number', cls: 'py-2 px-3' },
+            { key: 'category', label: 'Category', cls: 'py-2 px-2 text-center' },
+            { key: 'qty_pcs', label: 'Quantity (PCS)', cls: 'py-2 px-3 text-right font-mono' },
+            { key: 'date', label: 'Date', cls: 'py-2 px-3 text-right' }
+        ]
+    };
+
+    let drilldownCurrentStatus = '';
+    let searchDebounceTimer;
+
+    window.openDrilldownModal = function(chartType, label, status = null) {
+        drilldownCurrentType = chartType;
+        drilldownCurrentLabel = label;
+        drilldownCurrentStatus = status || '';
+        drilldownPage = 1;
+
+        const modal  = document.getElementById('drilldownModal');
+        const panel  = document.getElementById('drilldownPanel');
+        const searchInput = document.getElementById('drilldownSearch');
+
+        if(searchInput) searchInput.value = '';
+
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => panel.classList.remove('translate-x-full'));
+        
+        document.getElementById('drilldownTitle').textContent = 'Loading...';
+        document.getElementById('drilldownCountBadge').textContent = '0';
+
+        renderDrilldownLegend(chartType, drilldownCurrentStatus);
+        fetchDrilldownData(true);
+    };
+
+    function fetchDrilldownData(isInitial = false) {
+        const my = document.getElementById('month_picker')?.value || currentMonthYear;
+        const loader = document.getElementById('drilldownLoader');
+        const tableLoader = document.getElementById('drilldownTableLoader');
+        const content = document.getElementById('drilldownContent');
+        const search = document.getElementById('drilldownSearch').value;
+        const pageSize = document.getElementById('drilldownPageSize').value;
+        
+        if (isInitial) {
+            loader.classList.remove('hidden');
+            content.classList.add('hidden');
+            content.classList.remove('flex');
+        } else {
+            tableLoader.classList.remove('hidden');
+        }
+
+        $.get(drilldownUrl, { 
+            chart: drilldownCurrentType, 
+            label: drilldownCurrentLabel, 
+            status: drilldownCurrentStatus, 
+            month_year: my,
+            search: search,
+            page: drilldownPage,
+            pageSize: pageSize
+        })
+        .done(function(res) {
+            document.getElementById('drilldownTitle').textContent = res.title;
+            const cols = DRILLDOWN_COLS[res.chart] || [];
+            const tbody = document.getElementById('drilldownBody');
+            
+            // Header
+            document.getElementById('drilldownHead').innerHTML = '<tr>' + cols.map(c =>
+                `<th class="${c.cls} text-[9px] font-bold text-slate-500 uppercase tracking-widest">${c.label}</th>`
+            ).join('') + '</tr>';
+
+            // Body
+            if (!res.data || res.data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${cols.length}" class="py-10 text-center text-slate-400 italic text-[11px]">No data found.</td></tr>`;
+            } else {
+                tbody.innerHTML = res.data.map(row => {
+                    return '<tr class="hover:bg-slate-50 dark:hover:bg-gray-800/60 transition-colors border-b border-gray-50 dark:border-gray-800">' + cols.map(c => {
+                        const val = row[c.key] ?? '-';
+                        const badgeCls = (c.key === 'status' || c.key === 'category') ? STATUS_BADGE[val] : null;
+                        const cell = badgeCls
+                            ? `<span class="inline-block px-1.5 py-0.5 rounded-xs text-[9px] font-bold uppercase ${badgeCls}">${val}</span>`
+                            : `<span class="${c.key === 'part_no' ? 'font-medium text-slate-700 dark:text-gray-200' : 'text-slate-500 dark:text-slate-400'}">${val}</span>`;
+                        return `<td class="${c.cls}">${cell}</td>`;
+                    }).join('') + '</tr>';
+                }).join('');
+            }
+
+            // Pagination Stats
+            const total = res.total;
+            const start = (drilldownPage - 1) * pageSize + 1;
+            const end = Math.min(drilldownPage * pageSize, total);
+            
+            document.getElementById('drilldownCountBadge').textContent = total;
+            document.getElementById('ddTotal').textContent = total;
+            document.getElementById('ddPageStart').textContent = total === 0 ? 0 : start;
+            document.getElementById('ddPageEnd').textContent = end;
+            document.getElementById('ddCurrentPage').textContent = drilldownPage;
+            
+            document.getElementById('ddPrev').disabled = drilldownPage <= 1;
+            document.getElementById('ddNext').disabled = end >= total;
+
+            if (isInitial) {
+                loader.classList.add('hidden');
+                content.classList.remove('hidden');
+                content.classList.add('flex');
+                content.style.flexDirection = 'column';
+            } else {
+                tableLoader.classList.add('hidden');
+            }
+        });
+    }
+
+    window.resetDrilldownAndFetch = function() {
+        drilldownPage = 1;
+        fetchDrilldownData();
+    };
+
+    window.changeDrilldownPage = function(dir) {
+        drilldownPage += dir;
+        fetchDrilldownData();
+        document.querySelector('#drilldownContent .overflow-y-auto').scrollTop = 0;
+    };
+
+    function renderDrilldownLegend(type, activeStatus) {
+        const container = document.getElementById('drilldownLegendButtons');
+        container.innerHTML = '';
+        
+        const legends = {
+            'stock': ['Critical', 'Warning', 'Over', 'Safe'],
+            'usage_model': ['OUT-EVENT', 'OUT-PP', 'OUT-TRIAL'],
+            'maker': ['On Budget', 'Near Loss', 'Loss'],
+            'trendline': ['IN', 'OUT-EVENT', 'OUT-PP', 'OUT-TRIAL']
+        };
+
+        const currentLegends = legends[type] || [];
+        
+        const allBtn = createLegendBtn('All', activeStatus === '');
+        allBtn.onclick = () => { drilldownCurrentStatus = ''; drilldownPage = 1; updateLegendActive(allBtn); fetchDrilldownData(); };
+        container.appendChild(allBtn);
+
+        currentLegends.forEach(leg => {
+            const isActive = leg === activeStatus;
+            const btn = createLegendBtn(leg.replace('OUT-', ''), isActive);
+            btn.onclick = () => { drilldownCurrentStatus = leg; drilldownPage = 1; updateLegendActive(btn); fetchDrilldownData(); };
+            container.appendChild(btn);
+        });
+    }
+
+    function createLegendBtn(label, isActive) {
+        const btn = document.createElement('button');
+        btn.className = `legend-btn px-4 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all duration-200 ${
+            isActive 
+            ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' 
+            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+        }`;
+        btn.textContent = label;
+        return btn;
+    }
+
+    function updateLegendActive(activeBtn) {
+        $(activeBtn).siblings().removeClass('bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm')
+            .addClass('text-slate-500 dark:text-slate-400');
+        $(activeBtn).removeClass('text-slate-500 dark:text-slate-400')
+            .addClass('bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm');
+    }
+
+    $('#drilldownSearch').on('input', function() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            resetDrilldownAndFetch();
+        }, 400);
+    });
+
+    window.closeDrilldownModal = function() {
+        const panel = document.getElementById('drilldownPanel');
+        panel.classList.add('translate-x-full');
+        setTimeout(() => document.getElementById('drilldownModal').classList.add('hidden'), 300);
+    };
+
+    // Close on Escape key
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrilldownModal(); });
+</script>
+<style>
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* Drilldown Modal Overrides (Anti-Pulling from app.css) */
+    #drilldownModal select {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 1.75rem !important;
+        background-position: right 0.4rem center !important;
+        background-size: 1rem 1rem !important;
+        height: 32px !important;
+        line-height: 32px !important;
+    }
+    #drilldownModal input#drilldownSearch {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        height: 32px !important;
+        line-height: 32px !important;
+        padding-left: 2.25rem !important;
+    }
+    #drilldownModal .legend-btn {
+        padding: 0.4rem 1rem !important;
+        border: none !important;
+        height: auto !important;
+        line-height: 1 !important;
+        width: auto !important;
+        box-shadow: none !important;
+    }
+    #drilldownModal .legend-btn.bg-white {
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+    }
+</style>
 @endpush
+</script>
+<?php $__env->stopPush(); ?>
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Dev\eng\promise-dashboard\resources\views/all-dashboard.blade.php ENDPATH**/ ?>
