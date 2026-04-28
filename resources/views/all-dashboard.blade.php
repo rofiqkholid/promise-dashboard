@@ -401,7 +401,7 @@
             </div>
 
             {{-- Filter Card --}}
-            <div x-show="showInvFilter" x-collapse class="bg-white rounded-xs border border-slate-200 p-4">
+            <div x-show="showInvFilter" class="bg-white rounded-xs border border-slate-200 p-4">
                 <div class="flex flex-col lg:flex-row gap-4 lg:items-end">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 flex-1">
                         <div class="space-y-1.5">
@@ -563,6 +563,7 @@
 @push('scripts')
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>window.APP_BASE_URL = "{{ url('') }}";</script>
 <script src="{{ asset('js/inventory-dashboard.js') }}"></script>
 
 <script>
@@ -1363,7 +1364,7 @@
 
 <script>
 
-    const drilldownUrl = '/api/inventory-overview/drilldown';
+    const drilldownUrl = "{{ url('api/inventory-overview/drilldown') }}";
     const DRILLDOWN_COLS = {
         stock: [
             { key: 'part_no',   label: 'Part No',      cls: 'text-left py-2 px-3' },
@@ -1566,11 +1567,13 @@
             .addClass('bg-white text-primary-600 shadow-sm');
     }
 
-    $('#drilldownSearch').on('input', function() {
-        clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(() => {
-            resetDrilldownAndFetch();
-        }, 400);
+    document.addEventListener('DOMContentLoaded', () => {
+        $('#drilldownSearch').on('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                resetDrilldownAndFetch();
+            }, 400);
+        });
     });
 
     window.closeDrilldownModal = function() {

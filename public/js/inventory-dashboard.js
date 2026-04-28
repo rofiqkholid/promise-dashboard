@@ -1,12 +1,9 @@
 window.inventoryDashboard = function() {
+    const chartsMap = {};
     return {
         showInvFilter: false,
         invMonthYear: new Date().toISOString().slice(0, 7),
         invChartStore: {},
-        invStockChart: null,
-        invUsageModelChart: null,
-        invMakerChart: null,
-        invTrendlineChart: null,
         invFiltersInitialized: false,
 
         kpis: [
@@ -50,7 +47,8 @@ window.inventoryDashboard = function() {
             if (usage) params.append('status_usage[]', usage);
 
             try {
-                const res = await fetch(`/api/inventory-overview/data?${params}`);
+                const basePath = window.APP_BASE_URL || '';
+                const res = await fetch(`${basePath}/api/inventory-overview/data?${params}`);
                 const data = await res.json();
                 this.updateKpis(data.stats);
                 this.renderCharts(data.charts);
@@ -82,7 +80,7 @@ window.inventoryDashboard = function() {
             this.updateInvChart('invStockChart', stockLabels,
                 [stockData.map(d => d.critical), stockData.map(d => d.warning), stockData.map(d => d.over), stockData.map(d => d.safe)],
                 () => {
-                    this.invStockChart = new Chart(document.getElementById('invStockChart'), {
+                    chartsMap.invStockChart = new Chart(document.getElementById('invStockChart'), {
                         type: 'bar',
                         data: { labels: [], datasets: [
                             { label: 'Critical', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 },
@@ -91,14 +89,14 @@ window.inventoryDashboard = function() {
                             { label: 'Safe', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 }
                         ]},
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = this.invStockChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = this.invStockChart.data.datasets[di].label; openDrilldownModal('stock', ls, st); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invStockChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invStockChart.data.datasets[di].label; openDrilldownModal('stock', ls, st); }},
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                             scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 } } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
-                    return this.invStockChart;
+                    return chartsMap.invStockChart;
                 }
             );
 
@@ -107,7 +105,7 @@ window.inventoryDashboard = function() {
             this.updateInvChart('invUsageModelChart', usageLabels,
                 [charts.usage_model.map(i => i.event), charts.usage_model.map(i => i.pp), charts.usage_model.map(i => i.trial)],
                 () => {
-                    this.invUsageModelChart = new Chart(document.getElementById('invUsageModelChart'), {
+                    chartsMap.invUsageModelChart = new Chart(document.getElementById('invUsageModelChart'), {
                         type: 'bar',
                         data: { labels: [], datasets: [
                             { label: 'Event', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
@@ -115,14 +113,14 @@ window.inventoryDashboard = function() {
                             { label: 'Trial', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
                         ]},
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = this.invUsageModelChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const map = { 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('usage_model', ls, map[this.invUsageModelChart.data.datasets[di].label]); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invUsageModelChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const map = { 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('usage_model', ls, map[chartsMap.invUsageModelChart.data.datasets[di].label]); }},
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                             scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 } } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
-                    return this.invUsageModelChart;
+                    return chartsMap.invUsageModelChart;
                 }
             );
 
@@ -130,7 +128,7 @@ window.inventoryDashboard = function() {
             this.updateInvChart('invMakerChart', charts.maker.map(i => i.maker),
                 [charts.maker.map(i => i.on_budget), charts.maker.map(i => i.near_loss), charts.maker.map(i => i.loss)],
                 () => {
-                    this.invMakerChart = new Chart(document.getElementById('invMakerChart'), {
+                    chartsMap.invMakerChart = new Chart(document.getElementById('invMakerChart'), {
                         type: 'bar',
                         data: { labels: [], datasets: [
                             { label: 'On Budget', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 },
@@ -138,14 +136,14 @@ window.inventoryDashboard = function() {
                             { label: 'Loss', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
                         ]},
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = this.invMakerChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = this.invMakerChart.data.datasets[el[0].datasetIndex].label; openDrilldownModal('maker', ls, st); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invMakerChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invMakerChart.data.datasets[el[0].datasetIndex].label; openDrilldownModal('maker', ls, st); }},
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                             scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 } } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
-                    return this.invMakerChart;
+                    return chartsMap.invMakerChart;
                 }
             );
 
@@ -155,17 +153,17 @@ window.inventoryDashboard = function() {
             const cats = [...new Set(trendData.map(d => d.category))];
             const colorKeys = [this.chartColors.primary, this.chartColors.emerald, this.chartColors.amber, this.chartColors.rose, this.chartColors.indigo];
 
-            if (this.invTrendlineChart) {
-                this.invTrendlineChart.data.labels = dates;
-                this.invTrendlineChart.data.datasets = cats.map((cat, idx) => ({
+            if (chartsMap.invTrendlineChart) {
+                chartsMap.invTrendlineChart.data.labels = dates;
+                chartsMap.invTrendlineChart.data.datasets = cats.map((cat, idx) => ({
                     label: cat.replace('OUT-', '').split(' ').map(w => w === 'PP' ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
                     data: dates.map(d => (trendData.find(td => td.transaction_date === d && td.category === cat) || { total: 0 }).total),
                     borderColor: colorKeys[idx % colorKeys.length], backgroundColor: colorKeys[idx % colorKeys.length] + '1A',
                     fill: false, tension: 0.5, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2
                 }));
-                this.invTrendlineChart.update();
+                chartsMap.invTrendlineChart.update();
             } else if (document.getElementById('invTrendlineChart')) {
-                this.invTrendlineChart = new Chart(document.getElementById('invTrendlineChart'), {
+                chartsMap.invTrendlineChart = new Chart(document.getElementById('invTrendlineChart'), {
                     type: 'line',
                     data: {
                         labels: dates,
@@ -177,7 +175,7 @@ window.inventoryDashboard = function() {
                         }))
                     },
                     options: {
-                        onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = this.invTrendlineChart.data.labels[i]; const cat = this.invTrendlineChart.data.datasets[el[0].datasetIndex].label; const map = { 'In': 'IN', 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('trendline', l, map[cat] || cat); }},
+                        onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invTrendlineChart.data.labels[i]; const cat = chartsMap.invTrendlineChart.data.datasets[el[0].datasetIndex].label; const map = { 'In': 'IN', 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('trendline', l, map[cat] || cat); }},
                         onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                         interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                         scales: {
@@ -192,7 +190,7 @@ window.inventoryDashboard = function() {
 
         updateInvChart(id, labels, datasets, createFn) {
             const chartMap = { invStockChart: 'invStockChart', invUsageModelChart: 'invUsageModelChart', invMakerChart: 'invMakerChart' };
-            let chart = this[id];
+            let chart = chartsMap[id];
             if (!chart && document.getElementById(id)) { chart = createFn(); }
             if (!chart) return;
 
@@ -205,7 +203,7 @@ window.inventoryDashboard = function() {
 
         renderInvChartPage(id) {
             const store = this.invChartStore[id];
-            const chart = this[id];
+            const chart = chartsMap[id];
             if (!chart || !store) return;
             const start = store.page * store.pageSize;
             const end = start + store.pageSize;
@@ -312,7 +310,9 @@ window.inventoryDashboard = function() {
 
         initInvFilters() {
             const self = this;
-            const baseUrl = '/api/inventory-overview';
+            const basePath = window.APP_BASE_URL || '';
+            const baseUrl = `${basePath}/api/inventory-overview`;
+            
 
             $('#invFilterModel').select2({
                 dropdownParent: $('#invFilterModel').parent(), width: '100%', placeholder: 'All Models', allowClear: true,
