@@ -1,4 +1,4 @@
-window.inventoryDashboard = function() {
+window.inventoryDashboard = function () {
     const chartsMap = {};
     return {
         showInvFilter: false,
@@ -71,7 +71,7 @@ window.inventoryDashboard = function() {
             const Chart = window.Chart;
             if (!Chart) return;
             const tt = this.commonTooltip();
-            const commonLegend = { position: 'bottom', labels: { color: '#64748b', font: { size: 10 }, usePointStyle: true, pointStyle: 'rect', padding: 15 } };
+            const commonLegend = { position: 'bottom', labels: { color: '#64748b', font: { size: 14, family: 'Outfit' }, usePointStyle: true, pointStyle: 'rect', padding: 15 } };
             const commonInteraction = { mode: 'index', intersect: false };
 
             // Stock Status Chart
@@ -82,17 +82,19 @@ window.inventoryDashboard = function() {
                 () => {
                     chartsMap.invStockChart = new Chart(document.getElementById('invStockChart'), {
                         type: 'bar',
-                        data: { labels: [], datasets: [
-                            { label: 'Critical', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 },
-                            { label: 'Warning', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
-                            { label: 'Over', data: [], backgroundColor: this.chartColors.primary, borderRadius: 2 },
-                            { label: 'Safe', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 }
-                        ]},
+                        data: {
+                            labels: [], datasets: [
+                                { label: 'Critical', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 },
+                                { label: 'Warning', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
+                                { label: 'Over', data: [], backgroundColor: this.chartColors.primary, borderRadius: 2 },
+                                { label: 'Safe', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 }
+                            ]
+                        },
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invStockChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invStockChart.data.datasets[di].label; openDrilldownModal('stock', ls, st); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invStockChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invStockChart.data.datasets[di].label; openDrilldownModal('stock', ls, st); } },
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
-                            scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 } } } },
+                            scales: { x: { stacked: true, ticks: { font: { size: 12, family: 'Outfit' } } }, y: { stacked: true, beginAtZero: true, ticks: { font: { size: 12, family: 'Outfit' }, maxTicksLimit: 5 } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
@@ -107,16 +109,18 @@ window.inventoryDashboard = function() {
                 () => {
                     chartsMap.invUsageModelChart = new Chart(document.getElementById('invUsageModelChart'), {
                         type: 'bar',
-                        data: { labels: [], datasets: [
-                            { label: 'Event', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
-                            { label: 'PP', data: [], backgroundColor: this.chartColors.indigo, borderRadius: 2 },
-                            { label: 'Trial', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
-                        ]},
+                        data: {
+                            labels: [], datasets: [
+                                { label: 'Event', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
+                                { label: 'PP', data: [], backgroundColor: this.chartColors.indigo, borderRadius: 2 },
+                                { label: 'Trial', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
+                            ]
+                        },
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invUsageModelChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const map = { 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('usage_model', ls, map[chartsMap.invUsageModelChart.data.datasets[di].label]); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const di = el[0].datasetIndex; const l = chartsMap.invUsageModelChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const map = { 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('usage_model', ls, map[chartsMap.invUsageModelChart.data.datasets[di].label]); } },
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
-                            scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 } } } },
+                            scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 }, maxTicksLimit: 5 } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
@@ -130,16 +134,18 @@ window.inventoryDashboard = function() {
                 () => {
                     chartsMap.invMakerChart = new Chart(document.getElementById('invMakerChart'), {
                         type: 'bar',
-                        data: { labels: [], datasets: [
-                            { label: 'On Budget', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 },
-                            { label: 'Near Loss', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
-                            { label: 'Loss', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
-                        ]},
+                        data: {
+                            labels: [], datasets: [
+                                { label: 'On Budget', data: [], backgroundColor: this.chartColors.emerald, borderRadius: 2 },
+                                { label: 'Near Loss', data: [], backgroundColor: this.chartColors.amber, borderRadius: 2 },
+                                { label: 'Loss', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 }
+                            ]
+                        },
                         options: {
-                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invMakerChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invMakerChart.data.datasets[el[0].datasetIndex].label; openDrilldownModal('maker', ls, st); }},
+                            onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invMakerChart.data.labels[i]; const ls = Array.isArray(l) ? l.join('|') : l; const st = chartsMap.invMakerChart.data.datasets[el[0].datasetIndex].label; openDrilldownModal('maker', ls, st); } },
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
-                            scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 } } } },
+                            scales: { x: { stacked: true, ticks: { font: { size: 11 } } }, y: { stacked: true, ticks: { font: { size: 11 }, maxTicksLimit: 5 } } },
                             plugins: { tooltip: tt, legend: commonLegend }
                         }
                     });
@@ -175,12 +181,12 @@ window.inventoryDashboard = function() {
                         }))
                     },
                     options: {
-                        onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invTrendlineChart.data.labels[i]; const cat = chartsMap.invTrendlineChart.data.datasets[el[0].datasetIndex].label; const map = { 'In': 'IN', 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('trendline', l, map[cat] || cat); }},
+                        onClick: (e, el) => { if (el.length) { const i = el[0].index; const l = chartsMap.invTrendlineChart.data.labels[i]; const cat = chartsMap.invTrendlineChart.data.datasets[el[0].datasetIndex].label; const map = { 'In': 'IN', 'Event': 'OUT-EVENT', 'PP': 'OUT-PP', 'Trial': 'OUT-TRIAL' }; openDrilldownModal('trendline', l, map[cat] || cat); } },
                         onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                         interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                         scales: {
-                            x: { ticks: { font: { size: 11 } }, grid: { color: 'rgba(226, 232, 240, 0.6)' } },
-                            y: { beginAtZero: true, ticks: { font: { size: 11 } }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }
+                            x: { ticks: { font: { size: 12, family: 'Outfit' } }, grid: { color: 'rgba(226, 232, 240, 0.6)' } },
+                            y: { beginAtZero: true, ticks: { font: { size: 12, family: 'Outfit' }, maxTicksLimit: 5 }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }
                         },
                         plugins: { tooltip: tt, legend: commonLegend }
                     }
@@ -194,7 +200,7 @@ window.inventoryDashboard = function() {
             if (!chart && document.getElementById(id)) { chart = createFn(); }
             if (!chart) return;
 
-            this.invChartStore[id] = this.invChartStore[id] || { page: 0, pageSize: 6 };
+            this.invChartStore[id] = this.invChartStore[id] || { page: 0, pageSize: 5 };
             this.invChartStore[id].labels = labels;
             this.invChartStore[id].datasets = datasets;
             this.invChartStore[id].page = 0;
@@ -228,7 +234,7 @@ window.inventoryDashboard = function() {
 
         switchInvUsageChart(type) {
             const isModel = type === 'model';
-            $('#invUsageChartTitle').html('<span class="truncate">' + (isModel ? 'Usage by Models' : 'Supply by Makers') + '</span><span class="ml-2 px-1.5 py-0.5 rounded-xs bg-slate-100 text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>');
+            $('#invUsageChartTitle').html('<span class="truncate">' + (isModel ? 'Usage by Models' : 'Supply by Makers') + '</span><span class="ml-2 px-1.5 py-0.5 bg-slate-100 text-[11px] font-semibold text-slate-500 tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>');
             $('#invContainerUsageModel').toggleClass('hidden', !isModel);
             $('#invContainerUsageMaker').toggleClass('hidden', isModel);
             $('#btnInvUsageModel').toggleClass('bg-white text-primary-600 shadow-sm', isModel).toggleClass('text-gray-500 hover:text-gray-700', !isModel);
@@ -244,8 +250,8 @@ window.inventoryDashboard = function() {
 
         renderTables(tables) {
             const statusColors = {
-                'Critical': 'bg-red-50 text-red-600 border-red-100', 'Warning': 'bg-amber-50 text-amber-600 border-amber-100',
-                'Over': 'bg-primary-50 text-primary-600 border-primary-100', 'Safe': 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                'Critical': 'bg-red-50 text-red-600 border-red-200', 'Warning': 'bg-yellow-50 text-yellow-600 border-yellow-200',
+                'Over': 'bg-yellow-50 text-yellow-600 border-yellow-200', 'Safe': 'bg-green-50 text-green-600 border-green-200'
             };
             // Balance table
             const balanceTbody = $('#invBalanceTableBody');
@@ -256,10 +262,10 @@ window.inventoryDashboard = function() {
                 tables.balance.slice(0, 15).forEach(row => {
                     const cc = statusColors[row.status] || statusColors['Safe'];
                     balanceTbody.append(`<tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-1.5 px-3"><p class="text-[11px] font-medium text-slate-700 tracking-tight leading-tight uppercase">${row.part_no} ${row.revision ? '- ' + row.revision : ''}</p><p class="text-[9px] text-slate-400 uppercase tracking-tighter">${row.model_name || '-'} | ${row.customer_code || '-'}</p></td>
-                        <td class="py-1.5 px-2 text-right"><div class="text-[11px] font-medium text-slate-500 font-mono">${new Intl.NumberFormat().format(row.min_stock)}</div></td>
-                        <td class="py-1.5 px-2 text-right"><div class="text-[11px] font-medium text-slate-800 font-mono">${new Intl.NumberFormat().format(row.current_stock_qty)}</div></td>
-                        <td class="py-1.5 px-3 text-right"><span class="inline-flex px-1.5 py-0.5 rounded-xs text-[9px] font-medium ${cc} border uppercase leading-none">${row.status}</span></td>
+                        <td class="py-2 px-3"><p class="text-xs font-medium text-slate-700 tracking-tight leading-tight">${row.part_no} ${row.revision ? '- ' + row.revision : ''}</p><p class="text-[10px] text-slate-400 mt-0.5">${row.model_name || '-'} | ${row.customer_code || '-'}</p></td>
+                        <td class="py-2 px-2 text-right"><div class="text-xs font-medium text-slate-500">${new Intl.NumberFormat().format(row.min_stock)}</div></td>
+                        <td class="py-2 px-2 text-right"><div class="text-xs font-medium text-slate-800">${new Intl.NumberFormat().format(row.current_stock_qty)}</div></td>
+                        <td class="py-2 px-3 text-right"><span class="inline-flex items-center justify-center w-16 py-1 text-[11px] font-bold ${cc} border leading-none">${row.status}</span></td>
                     </tr>`);
                 });
             }
@@ -268,7 +274,7 @@ window.inventoryDashboard = function() {
             const usageTbody = $('#invUsageTableBody');
             usageTbody.empty();
             if (!tables.usage || tables.usage.length === 0) {
-                usageTbody.html('<tr><td colspan="5" class="p-8 text-center text-slate-400 italic text-[11px]">No trial data available.</td></tr>');
+                usageTbody.html('<tr><td colspan="5" class="p-8 text-center text-slate-400 text-[11px]">No trial data available.</td></tr>');
             } else {
                 tables.usage.slice(0, 15).forEach(row => {
                     const usageStatusColors = {
@@ -278,11 +284,11 @@ window.inventoryDashboard = function() {
                     };
                     const usc = usageStatusColors[row.status] || 'bg-slate-50 text-slate-600 border-slate-100';
                     usageTbody.append(`<tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-1.5 px-3 text-[11px] font-medium text-slate-700 uppercase tracking-tight">${row.part_no}</td>
-                        <td class="py-1.5 px-2 text-[10px] text-slate-500 uppercase truncate max-w-[80px]">${row.supplier_name || '-'}</td>
-                        <td class="py-1.5 px-2 text-[11px] font-medium text-slate-800 text-right font-mono">${new Intl.NumberFormat().format(row.out_trial)}</td>
-                        <td class="py-1.5 px-2 text-[11px] font-medium ${row.gap < 0 ? 'text-red-500' : 'text-emerald-500'} text-right font-mono">${new Intl.NumberFormat().format(row.gap)}</td>
-                        <td class="py-1.5 px-3 text-right"><span class="inline-flex px-1.5 py-0.5 rounded-xs text-[9px] font-medium ${usc} border uppercase leading-none">${row.status}</span></td>
+                        <td class="py-2 px-3 text-xs font-medium text-slate-700 tracking-tight">${row.part_no}</td>
+                        <td class="py-2 px-2 text-[11px] text-slate-500 truncate max-w-[80px]">${row.supplier_name || '-'}</td>
+                        <td class="py-2 px-2 text-xs font-medium text-slate-800 text-right">${new Intl.NumberFormat().format(row.out_trial)}</td>
+                        <td class="py-2 px-2 text-xs font-medium ${row.gap < 0 ? 'text-red-500' : 'text-emerald-500'} text-right">${new Intl.NumberFormat().format(row.gap)}</td>
+                        <td class="py-2 px-3 text-right"><span class="inline-flex items-center justify-center w-16 py-0.5 rounded-xs text-[10px] font-bold ${usc} border leading-none">${row.status}</span></td>
                     </tr>`);
                 });
             }
@@ -299,10 +305,10 @@ window.inventoryDashboard = function() {
                     const createdAt = new Date(row.created_at);
                     const timeStr = createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                     historyTbody.append(`<tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-1.5 px-3"><p class="text-[11px] font-medium text-slate-700 tracking-tight leading-tight uppercase">${row.part_no} ${row.revision ? '- ' + row.revision : ''}</p><p class="text-[9px] text-slate-400 uppercase tracking-tighter">${row.model_name || '-'} | ${row.customer_code || '-'}</p></td>
-                        <td class="py-1.5 px-2 text-center"><span class="px-1.5 py-0.5 rounded-xs text-[9px] font-medium bg-slate-100 text-slate-600 uppercase">${row.category}</span></td>
-                        <td class="py-1.5 px-2 text-center whitespace-nowrap"><div class="text-[10px] text-slate-500">${dateStr} <span class="text-[9px] text-slate-400 font-mono ml-1">${timeStr}</span></div></td>
-                        <td class="py-1.5 px-3 text-right"><div class="text-[11px] font-medium text-slate-800 font-mono">${new Intl.NumberFormat().format(row.qty_pcs)}</div></td>
+                        <td class="py-2 px-3"><p class="text-xs font-medium text-slate-700 tracking-tight leading-tight">${row.part_no} ${row.revision ? '- ' + row.revision : ''}</p><p class="text-[10px] text-slate-400 mt-0.5 truncate">${[row.customer_code, row.model_name].filter(Boolean).join(' | ')}</p></td>
+                        <td class="py-2 px-2 text-center"><span class="inline-flex items-center justify-center w-16 py-1 text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 leading-none">${row.category}</span></td>
+                        <td class="py-2 px-2 text-center"><p class="text-xs font-medium text-slate-700">${dateStr}</p><p class="text-[10px] text-slate-400 mt-0.5">${timeStr}</p></td>
+                        <td class="py-2 px-3 text-xs font-bold text-slate-800 text-right">${new Intl.NumberFormat().format(row.qty_pcs)}</td>
                     </tr>`);
                 });
             }
@@ -312,7 +318,7 @@ window.inventoryDashboard = function() {
             const self = this;
             const basePath = window.APP_BASE_URL || '';
             const baseUrl = `${basePath}/api/inventory-overview`;
-            
+
 
             $('#invFilterModel').select2({
                 dropdownParent: $('#invFilterModel').parent(), width: '100%', placeholder: 'All Models', allowClear: true,

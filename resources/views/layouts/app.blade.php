@@ -34,6 +34,9 @@
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-repeat: no-repeat; background-position: center; background-size: 1.25rem;
         }
+        .select2-container--default .select2-selection--single .select2-selection__clear {
+            display: none !important;
+        }
         .select2-search--dropdown { padding: 0; padding-bottom: 0.5rem; }
         .select2-search--dropdown .select2-search__field {
             border-radius: 1px; border: 1px solid #d1d5db; color: #595959; font-size: 0.975rem;
