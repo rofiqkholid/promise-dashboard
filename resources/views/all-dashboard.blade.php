@@ -476,7 +476,7 @@
                         </div>
                         <div class="overflow-y-auto flex-1 custom-scrollbar pr-1 lg:pr-2">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50/80 sticky top-0 z-10">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="py-2 px-3 text-xs font-bold text-slate-500 tracking-widest border-b border-gray-100">Part No</th>
                                         <th class="py-2 px-2 text-xs font-bold text-slate-500 tracking-widest text-right border-b border-gray-100">Min</th>
@@ -523,7 +523,7 @@
                         </div>
                         <div class="overflow-y-auto flex-1 custom-scrollbar pr-1 lg:pr-2">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50/80 sticky top-0 z-10">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="py-2 px-3 text-xs font-bold text-slate-500 tracking-widest border-b border-gray-100">Part No</th>
                                         <th class="py-2 px-2 text-xs font-bold text-slate-500 tracking-widest border-b border-gray-100">Supplier</th>
@@ -558,7 +558,7 @@
                         </div>
                         <div class="overflow-y-auto flex-1 custom-scrollbar pr-1 lg:pr-2">
                             <table class="w-full text-left">
-                                <thead class="bg-gray-50/80 sticky top-0 z-10">
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
                                         <th class="py-2 px-3 text-xs font-bold text-slate-500 tracking-widest border-b border-gray-100">Part No</th>
                                         <th class="py-2 px-2 text-xs font-bold text-slate-500 tracking-widest text-center border-b border-gray-100">Type</th>

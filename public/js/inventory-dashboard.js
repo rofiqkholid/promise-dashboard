@@ -7,8 +7,8 @@ window.inventoryDashboard = function () {
         invFiltersInitialized: false,
 
         kpis: [
-            { id: 'total_value', label: 'Total Value', value: '0', unit: 'IDR', icon: 'fa-coins', iconBg: 'bg-primary-50 text-primary-600' },
-            { id: 'total_stock', label: 'Total Stock', value: '0', unit: 'Item Part', icon: 'fa-cubes', iconBg: 'bg-slate-50 text-slate-600' },
+            { id: 'total_value', label: 'Total Value', value: '0', unit: 'IDR', icon: 'fa-coins', iconBg: 'bg-blue-50 text-blue-600' },
+            { id: 'total_stock', label: 'Total Stock', value: '0', unit: 'Item Part', icon: 'fa-cubes', iconBg: 'bg-purple-50 text-purple-600' },
             { id: 'material_in', label: 'In', value: '0', unit: 'Item Part', icon: 'fa-arrow-right-to-bracket', iconBg: 'bg-emerald-50 text-emerald-600' },
             { id: 'out_event', label: 'Out Event', value: '0', unit: 'Item Part', icon: 'fa-arrow-right-from-bracket', iconBg: 'bg-amber-50 text-amber-600' },
             { id: 'out_pp', label: 'Out PP', value: '0', unit: 'Item Part', icon: 'fa-industry', iconBg: 'bg-indigo-50 text-indigo-600' },
