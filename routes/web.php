@@ -55,5 +55,10 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['get', 'post'], '/inventory-overview/customers', [\App\Http\Controllers\Api\InventoryOverviewController::class, 'getCustomers']);
         Route::get('/inventory-overview/statuses/{type}', [\App\Http\Controllers\Api\InventoryOverviewController::class, 'getStatuses']);
 
+        // VA/VE Project Dashboard
+        Route::get('/vave-project/chart-data', [\App\Http\Controllers\Api\ProjectVaveDashboardController::class, 'chartData']);
+        Route::get('/vave-project/pareto-data', [\App\Http\Controllers\Api\ProjectVaveDashboardController::class, 'paretoData']);
+        Route::get('/vave-project/ebd-versions', [\App\Http\Controllers\Api\ProjectVaveDashboardController::class, 'ebdVersions']);
+
     });
 });

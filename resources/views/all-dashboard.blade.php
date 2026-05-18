@@ -57,8 +57,10 @@
                 }, 5000);
             },
             
+            sections: ['drawing', 'inventory', 'vave_project'],
             toggleSection() {
-                this.activeSection = this.activeSection === 'drawing' ? 'inventory' : 'drawing';
+                let idx = this.sections.indexOf(this.activeSection);
+                this.activeSection = this.sections[(idx + 1) % this.sections.length];
             }
         }">
     <div class="relative flex-1 w-full min-h-0 flex flex-col"
@@ -131,6 +133,7 @@
 
         @include('components.dashboard-drawing')
         @include('components.dashboard-inventory')
+        @include('components.dashboard-vave-project')
 
     </div> <!-- End of Grid Wrapper -->
 </main>
@@ -145,6 +148,7 @@
 <script src="{{ asset('js/inv-material-dashboard.js') }}"></script>
 
 <script src="{{ asset('js/drawing-dashboard.js') }}"></script>
+<script src="{{ asset('js/vave-project-dashboard.js') }}"></script>
 {{-- Drilldown Modal --}}
 <div id="drilldownModal" class="fixed inset-0 z-50 hidden" aria-modal="true">
     <div class="absolute inset-0 bg-black/40" onclick="closeDrilldownModal()"></div>

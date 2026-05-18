@@ -6,7 +6,7 @@
             {{-- Header & KPIs --}}
             <div class="flex-none flex flex-col xl:flex-row gap-3 mb-3">
                 <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
-                    <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Inventory Overview</h2>
+                    <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Inv. Material Overview</h2>
                     <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">Stock monitoring and transaction analytics</p>
                 </div>
                 
