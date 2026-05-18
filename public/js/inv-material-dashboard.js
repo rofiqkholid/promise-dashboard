@@ -82,6 +82,7 @@ window.inventoryDashboard = function () {
                 () => {
                     chartsMap.invStockChart = new Chart(document.getElementById('invStockChart'), {
                         type: 'bar',
+                        plugins: [ChartDataLabels],
                         data: {
                             labels: [], datasets: [
                                 { label: 'Critical', data: [], backgroundColor: this.chartColors.rose, borderRadius: 2 },
@@ -95,7 +96,19 @@ window.inventoryDashboard = function () {
                             onHover: (e, el) => { e.native.target.style.cursor = el[0] ? 'pointer' : 'default'; },
                             interaction: commonInteraction, responsive: true, maintainAspectRatio: false,
                             scales: { x: { stacked: true, ticks: { font: { size: 12, family: 'Outfit' } } }, y: { stacked: true, beginAtZero: true, ticks: { font: { size: 12, family: 'Outfit' }, maxTicksLimit: 5 } } },
-                            plugins: { tooltip: tt, legend: commonLegend }
+                            plugins: {
+                                tooltip: tt,
+                                legend: commonLegend,
+                                datalabels: {
+                                    color: '#ffffff',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                    borderRadius: 0,
+                                    padding: { top: 2, bottom: 2, left: 4, right: 4 },
+                                    font: { size: 10, weight: 'bold', family: 'Outfit' },
+                                    display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
+                                    formatter: (value) => { return value; }
+                                }
+                            }
                         }
                     });
                     return chartsMap.invStockChart;
@@ -171,6 +184,7 @@ window.inventoryDashboard = function () {
             } else if (document.getElementById('invTrendlineChart')) {
                 chartsMap.invTrendlineChart = new Chart(document.getElementById('invTrendlineChart'), {
                     type: 'line',
+                    plugins: [ChartDataLabels],
                     data: {
                         labels: dates,
                         datasets: cats.map((cat, idx) => ({
@@ -188,7 +202,21 @@ window.inventoryDashboard = function () {
                             x: { ticks: { font: { size: 12, family: 'Outfit' } }, grid: { color: 'rgba(226, 232, 240, 0.6)' } },
                             y: { beginAtZero: true, ticks: { font: { size: 12, family: 'Outfit' }, maxTicksLimit: 5 }, grid: { color: 'rgba(226, 232, 240, 0.6)' } }
                         },
-                        plugins: { tooltip: tt, legend: commonLegend }
+                        plugins: {
+                            tooltip: tt,
+                            legend: { position: 'bottom', labels: { color: '#64748b', font: { size: 14, family: 'Outfit' }, usePointStyle: true, pointStyle: 'circle', padding: 15 } },
+                            datalabels: {
+                                color: '#ffffff',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                borderRadius: 0,
+                                padding: { top: 2, bottom: 2, left: 4, right: 4 },
+                                font: { size: 10, weight: 'bold', family: 'Outfit' },
+                                align: 'top',
+                                offset: 4,
+                                display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
+                                formatter: (value) => { return value; }
+                            }
+                        }
                     }
                 });
             }
