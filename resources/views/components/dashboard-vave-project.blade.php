@@ -4,13 +4,13 @@
      @open-filter-modal.window="if(activeSection === 'vave_project') showVaveFilter = true">
 
     {{-- Header & KPIs --}}
-    <div class="flex-none flex flex-col xl:flex-row gap-3 mb-3">
+    <div class="flex-none flex flex-col xl:flex-row gap-2">
         <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
             <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Project Model Vave Analysis</h2>
             <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">Gap Benefit: (Plan - Act Kg) x Price * Qty In</p>
         </div>
         
-        <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
             <!-- KPIs -->
             <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
                 <div class="p-2 rounded mr-3 flex-shrink-0 bg-blue-50 text-blue-600">
@@ -79,7 +79,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-0.5">Mode</label>
-                        <select x-model="filter.mode" @change="fetchVaveData()" class="w-full text-xs border border-gray-300 py-1.5 px-2 outline-none">
+                        <select x-model="filter.mode" @change="onModeChange()" style="height: 2.375rem; border-radius: 1px; border: 1px solid #d1d5db; padding-left: 0.75rem; padding-right: 2.5rem; color: #3f3f3f; font-size: 0.875rem; background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem;" class="w-full appearance-none focus:ring-0 focus:outline-none bg-white">
                             <option value="monthly">Monthly View</option>
                             <option value="yearly">Yearly Trend</option>
                             <option value="comparison">Yearly Comparison</option>
@@ -88,10 +88,20 @@
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-0.5">Period</label>
                         <div class="relative">
-                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <i class="fa-solid fa-calendar-days text-gray-400 text-sm"></i>
+                            <!-- Year Selector Dropdown (visible when mode is not monthly) -->
+                            <select x-show="filter.mode !== 'monthly'" x-model="filter.period" @change="fetchVaveData()" style="height: 2.375rem; border-radius: 1px; border: 1px solid #d1d5db; padding-left: 0.75rem; padding-right: 2.5rem; color: #3f3f3f; font-size: 0.875rem; background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem;" class="w-full appearance-none focus:ring-0 focus:outline-none bg-white">
+                                <template x-for="y in yearsList" :key="y">
+                                    <option :value="y" x-text="y" :selected="y === filter.period"></option>
+                                </template>
+                            </select>
+                            
+                            <!-- Month Picker Input (visible when mode is monthly) -->
+                            <div x-show="filter.mode === 'monthly'" class="relative">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i class="fa-solid fa-calendar-days text-gray-400 text-sm"></i>
+                                </div>
+                                <input type="month" x-model="filter.period" @change="fetchVaveData()" style="height: 2.375rem; border: 1px solid #d1d5db; border-radius: 1px; font-size: 0.875rem; color: #3f3f3f; padding-left: 2.25rem;" class="block w-full focus:ring-0 focus:outline-none bg-white">
                             </div>
-                            <input type="month" x-model="filter.period" @change="fetchVaveData()" style="height: 2.375rem; border: 1px solid #d1d5db; border-radius: 1px; font-size: 0.875rem; color: #3f3f3f;" class="block w-full focus:ring-0 focus:outline-none py-1.5 pl-9 pr-3">
                         </div>
                     </div>
                     <div>
@@ -108,7 +118,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-0.5">EBD Version</label>
-                        <select x-model="filter.ebd_version" @change="fetchVaveData()" style="height: 2.375rem; border-radius: 1px;" class="w-full text-xs border border-gray-300 py-1.5 px-2 outline-none">
+                        <select x-model="filter.ebd_version" @change="fetchVaveData()" style="height: 2.375rem; border-radius: 1px; border: 1px solid #d1d5db; padding-left: 0.75rem; padding-right: 2.5rem; color: #3f3f3f; font-size: 0.875rem; background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1.25rem;" class="w-full appearance-none focus:ring-0 focus:outline-none bg-white">
                             <option value="">All Versions</option>
                             <template x-for="v in ebdVersionsList" :key="v">
                                 <option :value="v" x-text="v"></option>
@@ -127,12 +137,11 @@
     </div>
 
     {{-- Charts 2-Column Layout --}}
-    <div class="flex flex-col lg:flex-row gap-2 min-h-0 lg:flex-[40]">
+    <div class="flex flex-col lg:flex-row gap-2 min-h-0 lg:flex-[58]">
         {{-- Benefit by Model --}}
         <div class="w-full lg:w-1/2 border border-gray-200 bg-white p-3 flex flex-col min-h-0">
             <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
-                <h3 class="font-bold text-gray-700 text-xl lg:text-2xl flex items-center gap-2">
-                    <i class="fa-solid fa-chart-line" :class="chartType === 'benefit' ? 'text-emerald-500' : (chartType === 'weight' ? 'text-blue-500' : 'text-amber-500')"></i> 
+                <h3 class="font-bold text-gray-700 text-lg flex items-center gap-2">
                     <span x-text="chartType === 'benefit' ? 'Benefit by Model' : (chartType === 'weight' ? 'Weight by Model' : 'Efficiency by Model')">Benefit by Model</span>
                     <span class="text-[10px] bg-gray-100 text-gray-500 px-1 py-0.5 border border-gray-200" x-text="chartType === 'benefit' ? 'IDR' : (chartType === 'weight' ? 'KG' : '%')">IDR</span>
                 </h3>
@@ -148,8 +157,8 @@
         {{-- Pareto Analysis --}}
         <div class="w-full lg:w-1/2 border border-gray-200 bg-white p-3 flex flex-col min-h-0">
             <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
-                <h3 class="font-bold text-gray-700 text-xl lg:text-2xl flex items-center gap-2">
-                    <i class="fa-solid fa-chart-bar text-blue-500"></i> Pareto Analysis <span class="text-[10px] bg-gray-100 text-gray-500 px-1 py-0.5 border border-gray-200">Contribution</span>
+                <h3 class="font-bold text-gray-700 text-lg flex items-center gap-2">
+                    Pareto Analysis <span class="text-[10px] bg-gray-100 text-gray-500 px-1 py-0.5 border border-gray-200">Contribution</span>
                 </h3>
             </div>
             <div class="relative w-full flex-1 min-h-0"><canvas id="vaveParetoChart"></canvas></div>
@@ -157,10 +166,10 @@
     </div>
 
     {{-- Bottom Table --}}
-    <div class="border border-gray-200 bg-white p-3 lg:p-4 flex flex-col min-h-[300px] lg:flex-[60] overflow-hidden mt-2">
+    <div class="border border-gray-200 bg-white p-3 lg:p-4 flex flex-col min-h-[200px] lg:flex-[42] overflow-hidden">
         <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
-            <h3 class="font-bold text-gray-700 text-xl lg:text-2xl flex items-center gap-2">
-                <i class="fa-solid fa-table text-blue-500"></i> Detailed VAVE Analysis (Project Model)
+            <h3 class="font-bold text-gray-700 text-lg flex items-center gap-2">
+                Detailed VAVE Analysis (Project Model)
             </h3>
             <button class="px-2 py-1 text-[10px] font-semibold text-emerald-600 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1 transition-colors">
                 <i class="fa-regular fa-file-excel"></i> Export Excel

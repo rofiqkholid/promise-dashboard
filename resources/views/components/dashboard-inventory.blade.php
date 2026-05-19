@@ -1,29 +1,96 @@
         <!-- Inventory Wrapper -->
         <div class="lg:absolute inset-0 flex flex-col min-h-0 w-full gap-2" x-show="activeSection === 'inventory'" x-transition.opacity.duration.700ms style="display: none;"
-             x-data="inventoryDashboard()" x-init="fetchInventoryData()"
-             @open-filter-modal.window="if(activeSection === 'inventory') showInvFilter = true">
+            x-data="inventoryDashboard()" x-init="fetchInventoryData()"
+            @open-filter-modal.window="if(activeSection === 'inventory') showInvFilter = true">
 
             {{-- Header & KPIs --}}
-            <div class="flex-none flex flex-col xl:flex-row gap-3 mb-3">
-                <div class="flex flex-col justify-center px-2 w-full xl:w-auto flex-shrink-0 mr-2">
-                    <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Inv. Material Overview</h2>
-                    <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">Stock monitoring and transaction analytics</p>
+            <div class="flex-none flex flex-col lg:flex-row gap-2 pb-1">
+                {{-- Column 1 Header: Title & Total Value --}}
+                <div class="w-full lg:w-1/3 flex items-center justify-between min-w-0">
+                    <div class="flex flex-col justify-center px-2 flex-shrink-0 mr-2">
+                        <h2 class="text-lg xl:text-xl font-bold text-gray-800 leading-none mb-1 whitespace-nowrap">Inv. Material Overview</h2>
+                        <p class="text-[11px] xl:text-xs text-gray-500 leading-tight whitespace-nowrap">Stock monitoring and transaction analytics</p>
+                    </div>
+                    <!-- Total Value KPI Card -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 flex-1 min-w-0">
+                        <div class="p-2 rounded bg-blue-50 text-blue-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-coins text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">Total Value</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[0].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[0].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="flex-1 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-                    <template x-for="kpi in kpis" :key="kpi.id">
-                        <div class="flex-1 bg-white p-3 flex items-center border border-gray-200 min-w-0">
-                            <div class="p-2 rounded mr-3 flex-shrink-0" :class="kpi.iconBg">
-                                <i class="fa-solid text-lg mx-0.5" :class="kpi.icon"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="text-sm text-gray-500 font-bold mb-0.5 tracking-wide truncate" x-text="kpi.label"></p>
-                                <h3 class="text-xl font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
-                                    <span x-text="kpi.value"></span> <span class="text-[10px] text-gray-400 font-medium ml-0.5" x-text="kpi.unit"></span>
-                                </h3>
-                            </div>
+                {{-- Column 2 Header: Total Stock, In, Out Event --}}
+                <div class="w-full lg:w-1/3 grid grid-cols-3 gap-2">
+                    <!-- Total Stock -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="p-2 rounded bg-purple-50 text-purple-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-cubes text-lg mx-0.5"></i>
                         </div>
-                    </template>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">Total Stock</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[1].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[1].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
+                    <!-- In -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="p-2 rounded bg-emerald-50 text-emerald-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-arrow-right-to-bracket text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">In</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[2].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[2].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
+                    <!-- Out Event -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="p-2 rounded bg-amber-50 text-amber-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-arrow-right-from-bracket text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">Out Event</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[3].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[3].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                
+                {{-- Column 3 Header: Out PP, Out Trial --}}
+                <div class="w-full lg:w-1/3 grid grid-cols-2 gap-2">
+                    <!-- Out PP -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="p-2 rounded bg-indigo-50 text-indigo-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-industry text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">Out PP</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[4].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[4].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
+                    <!-- Out Trial -->
+                    <div class="bg-white p-3 flex items-center border border-gray-200 min-w-0">
+                        <div class="p-2 rounded bg-rose-50 text-rose-600 mr-2 flex-shrink-0">
+                            <i class="fa-solid fa-vial text-lg mx-0.5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-gray-500 font-bold mb-0.5 tracking-wide truncate">Out Trial</p>
+                            <h3 class="text-sm lg:text-base font-bold text-gray-800 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span x-text="kpis[5].value"></span> <span class="text-[9px] text-gray-400 font-medium ml-0.5" x-text="kpis[5].unit"></span>
+                            </h3>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -39,7 +106,7 @@
                         </button>
                     </div>
                     <div class="px-10 py-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 items-start">
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 mb-0.5">Period</label>
                                 <div class="relative">
@@ -88,10 +155,10 @@
             <div class="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
                 {{-- Column 1: Stock Status + Balance Warnings --}}
                 <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+
                     <div class="border border-gray-200 bg-white p-3 lg:p-4 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
                         <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
                             <h3 class="font-bold text-gray-700 text-lg flex items-center min-w-0 pr-2">
-
                                 <span class="truncate">Stock Status</span>
                                 <span class="ml-2 px-1.5 py-0.5 bg-slate-100 text-[11px] font-semibold text-slate-500 tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
                             </h3>
@@ -126,16 +193,16 @@
 
                 {{-- Column 2: Usage by Model/Maker + Material Usage Table --}}
                 <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+
                     <div class="border border-gray-200 bg-white p-3 lg:p-4 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
                         <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
                             <h3 id="invUsageChartTitle" class="font-bold text-gray-700 text-lg flex items-center min-w-0 pr-2">
-
                                 <span class="truncate">Usage by Models</span>
                                 <span class="ml-2 px-1.5 py-0.5 bg-slate-100 text-[11px] font-semibold text-slate-500 tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
                             </h3>
                             <div class="flex items-center gap-2 flex-shrink-0">
                                 <div class="flex bg-gray-100 p-0.5">
-                                    <button type="button" @click="switchInvUsageChart('model')" id="btnInvUsageModel" class="px-2 py-1 text-[11px] font-semibold transition-all bg-white text-primary-600 shadow-sm">Model</button>
+                                    <button type="button" @click="switchInvUsageChart('model')" id="btnInvUsageModel" class="px-2 py-1 text-[11px] font-semibold transition-all bg-white text-primary-600">Model</button>
                                     <button type="button" @click="switchInvUsageChart('maker')" id="btnInvUsageMaker" class="px-2 py-1 text-[11px] font-semibold transition-all text-gray-500 hover:text-gray-700">Maker</button>
                                 </div>
                                 <div class="flex items-center gap-1 border-l border-gray-200 pl-2">
@@ -174,10 +241,10 @@
 
                 {{-- Column 3: Transaction Trend + Recent Activity --}}
                 <div class="w-full lg:w-1/3 flex flex-col gap-2 h-full min-h-0">
+
                     <div class="border border-gray-200 bg-white p-3 lg:p-4 flex flex-col relative h-[250px] lg:h-auto lg:flex-[55] min-h-0">
                         <div class="flex-none flex items-center justify-between border-b border-gray-100 pb-2 mb-2">
                             <h3 class="font-bold text-gray-700 text-lg flex items-center min-w-0">
-
                                 <span class="truncate">Transaction Trend</span>
                                 <span class="ml-2 px-1.5 py-0.5 bg-slate-100 text-[11px] font-semibold text-slate-500 tracking-widest border border-slate-200/50 flex-shrink-0 whitespace-nowrap">Item Part</span>
                             </h3>

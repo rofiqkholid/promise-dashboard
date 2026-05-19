@@ -4,6 +4,7 @@ window.vaveProjectDashboard = function () {
         showVaveFilter: false,
         vaveFiltersInitialized: false,
         ebdVersionsList: [],
+        yearsList: Array.from({length: 6}, (_, i) => (new Date().getFullYear() - i).toString()),
         filter: {
             mode: 'monthly',
             period: new Date().toISOString().slice(0, 7), // YYYY-MM
@@ -63,6 +64,24 @@ window.vaveProjectDashboard = function () {
             });
         },
 
+        onModeChange() {
+            if (this.filter.mode === 'monthly') {
+                if (this.filter.period && this.filter.period.length === 4) {
+                    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+                    this.filter.period = `${this.filter.period}-${currentMonth}`;
+                } else if (!this.filter.period) {
+                    this.filter.period = new Date().toISOString().slice(0, 7);
+                }
+            } else {
+                if (this.filter.period && this.filter.period.includes('-')) {
+                    this.filter.period = this.filter.period.split('-')[0];
+                } else if (!this.filter.period) {
+                    this.filter.period = new Date().getFullYear().toString();
+                }
+            }
+            this.fetchVaveData();
+        },
+
         resetVaveFilter() {
             this.filter.mode = 'monthly';
             this.filter.period = new Date().toISOString().slice(0, 7);
@@ -88,14 +107,17 @@ window.vaveProjectDashboard = function () {
                 }
                 
                 let year = new Date().getFullYear();
-                let month = new Date().getMonth() + 1;
+                let month = '';
                 
                 if (this.filter.period) {
-                    const parts = this.filter.period.split('-');
-                    year = parseInt(parts[0], 10);
-                    if (this.filter.mode === 'monthly') {
-                        month = parseInt(parts[1], 10);
+                    if (this.filter.period.includes('-')) {
+                        const parts = this.filter.period.split('-');
+                        year = parseInt(parts[0], 10);
+                        if (this.filter.mode === 'monthly') {
+                            month = parseInt(parts[1], 10);
+                        }
                     } else {
+                        year = parseInt(this.filter.period, 10);
                         month = '';
                     }
                 }
@@ -179,8 +201,7 @@ window.vaveProjectDashboard = function () {
                             color: '#64748b',
                             font: { family: 'Outfit', size: 14 },
                             usePointStyle: true,
-                            pointStyle: 'circle',
-                            boxWidth: 8,
+                            boxWidth: 12,
                             padding: 20
                         } 
                     }
@@ -262,7 +283,7 @@ window.vaveProjectDashboard = function () {
                             borderWidth: chartTypeParam === 'line' ? 3 : 0,
                             fill: chartTypeParam === 'line',
                             tension: 0.4,
-                            pointBackgroundColor: '#fff',
+                            pointBackgroundColor: color,
                             pointBorderColor: color,
                             pointRadius: chartTypeParam === 'line' ? 4 : 0,
                             borderRadius: 2,
@@ -307,8 +328,8 @@ window.vaveProjectDashboard = function () {
                                 label: 'Cumulative %',
                                 data: meritPareto.map(p => p.cumulative_pct),
                                 pointStyle: 'circle',
-                                borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                                yAxisID: 'y1', tension: 0.4, borderWidth: 2, pointBackgroundColor: '#fff', pointBorderColor: '#f59e0b',
+                                borderColor: '#f59e0b', backgroundColor: '#f59e0b',
+                                yAxisID: 'y1', tension: 0.4, borderWidth: 2, pointBackgroundColor: '#f59e0b', pointBorderColor: '#f59e0b',
                                 datalabels: {
                                     display: (ctx) => ctx.dataset.data[ctx.dataIndex] !== 0,
                                     anchor: 'end', align: 'top', color: '#ffffff', backgroundColor: 'rgba(0, 0, 0, 0.5)', borderRadius: 0, padding: { top: 2, bottom: 2, left: 4, right: 4 }, font: {size: 12, weight:'bold', family: 'Outfit'},
