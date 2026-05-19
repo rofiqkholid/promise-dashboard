@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
 use App\Http\Controllers\Api\InventoryOverviewController;
 use App\Http\Controllers\Api\InventoryManagementController;
 use App\Http\Controllers\Api\PartDetailController;
@@ -18,7 +19,7 @@ Route::get('/login', function () {
 
 Route::post('/logout', function () {
     Auth::logout();
-    session()->invalidate();
+    Session::invalidate();
     return redirect(env('PORTAL_LOGIN_URL'));
 })->name('logout');
 
